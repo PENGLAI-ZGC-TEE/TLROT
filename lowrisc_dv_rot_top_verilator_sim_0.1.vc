@@ -384,7 +384,7 @@
 ../src/main/resources/TLROT/src/lowrisc_ip_rom_ctrl_0.1/rtl/rom_ctrl_scrambled_rom.sv
 ../src/main/resources/TLROT/src/lowrisc_systems_rot_top_0.1/rtl/top_earlgrey_rnd_cnst_rot_pkg.sv
 ../src/main/resources/TLROT/src/lowrisc_systems_rot_top_0.1/rtl/rot_top.sv
-../src/main/resources/TLROT/src/lowrisc_systems_rot_top_0.1/rtl/otbn_otp_ctrl.sv
+../src/main/resources/TLROT/src/lowrisc_systems_rot_top_0.1/rtl/otbn_otp_controller.sv
 ../src/main/resources/TLROT/src/lowrisc_systems_rot_top_0.1/rtl/xbar_main_rot.sv
 ../src/main/resources/TLROT/src/rng/ast_pulse_sync.sv
 ../src/main/resources/TLROT/src/rng/rng.sv
