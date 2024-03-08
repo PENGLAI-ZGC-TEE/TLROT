@@ -87,8 +87,6 @@ generate
         .O(ro_a[i]),
         .I0(ca[i*5+2])
     );
-  //  assign #1 ca[4+5*i] = ca_test[4+5*i];
-    //assign mux_in_a[i] = ca[i*5+2];
     assign mux_in_a[i] = ro_a[i];
     assign ena[i] = dec_out_a[i];
 
@@ -129,8 +127,6 @@ generate
         .O(ro_b[j]),
         .I0(cb[j*5+2])
     );
-  // assign #2 cb[4+5*j] = cb_test[4+5*j];
-   //assign mux_in_b[j] = cb[j*5+2];
    assign mux_in_b[j] = ro_b[j];
    assign enb[j] = dec_out_b[j];
 
