@@ -15,8 +15,8 @@ package tl_main_rot_pkg;
   // localparam logic [31:0] ADDR_SPACE_EDN0_ROT                 = 32'h 41170000;
   // localparam logic [31:0] ADDR_SPACE_KEYMGR_ROT               = 32'h 41140000;
 
-  localparam logic [31:0] ADDR_SPACE_ROM_CTRL__ROM_ROT        = 32'h 3a000000;
-  localparam logic [31:0] ADDR_SPACE_RSTMGR_ROT               = 32'h 3b300000;
+  localparam logic [31:0] ADDR_SPACE_ROM_CTRL__ROM_ROT        = 32'h 3b200000;
+  localparam logic [31:0] ADDR_SPACE_RSTMGR_ROT               = 32'h 3b010000;
   localparam logic [31:0] ADDR_SPACE_ROM_CTRL__REGS_ROT       = 32'h 3b1e0000;
   localparam logic [31:0] ADDR_SPACE_HMAC_ROT                 = 32'h 3b110000;
   localparam logic [31:0] ADDR_SPACE_KMAC_ROT                 = 32'h 3b120000;
