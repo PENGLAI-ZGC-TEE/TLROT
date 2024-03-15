@@ -107,8 +107,8 @@
  `include "prim_assert_yosys_macros.svh"
  `define INC_ASSERT
 `else
- `include "prim_assert_standard_macros.svh"
- `define INC_ASSERT
+ `include "prim_assert_dummy_macros.svh"
+//  `define INC_ASSERT
 `endif
 
 //////////////////////////////
