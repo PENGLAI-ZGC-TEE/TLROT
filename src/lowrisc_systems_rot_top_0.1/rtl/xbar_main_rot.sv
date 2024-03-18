@@ -48,8 +48,8 @@ module xbar_main_rot (
   
 
   // Device interfaces
-  output tlul_pkg::tl_h2d_t tl_rom_ctrl__rom_o,
-  input  tlul_pkg::tl_d2h_t tl_rom_ctrl__rom_i,
+  // output tlul_pkg::tl_h2d_t tl_rom_ctrl__rom_o,
+  // input  tlul_pkg::tl_d2h_t tl_rom_ctrl__rom_i,
   output tlul_pkg::tl_h2d_t tl_rom_ctrl__regs_o,
   input  tlul_pkg::tl_d2h_t tl_rom_ctrl__regs_i,
   output tlul_pkg::tl_h2d_t tl_hmac_o,
@@ -90,11 +90,11 @@ module xbar_main_rot (
   // Create steering signal
 
 
-  tl_h2d_t tl_sm1_28_us_h2d [3];
-  tl_d2h_t tl_sm1_28_us_d2h [3];
+  // tl_h2d_t tl_sm1_28_us_h2d [1];
+  // tl_d2h_t tl_sm1_28_us_d2h [1];
 
-  tl_h2d_t tl_sm1_28_ds_h2d ;
-  tl_d2h_t tl_sm1_28_ds_d2h ;
+  // tl_h2d_t tl_sm1_28_ds_h2d ;
+  // tl_d2h_t tl_sm1_28_ds_d2h ;
 
 
   tl_h2d_t tl_s1n_32_us_h2d ;
@@ -102,95 +102,95 @@ module xbar_main_rot (
   tl_d2h_t tl_s1n_32_us_d2h ;
 
 
-  tl_h2d_t tl_s1n_32_ds_h2d [14];
-  tl_d2h_t tl_s1n_32_ds_d2h [14];
+  tl_h2d_t tl_s1n_32_ds_h2d [13];
+  tl_d2h_t tl_s1n_32_ds_d2h [13];
 
   // Create steering signal
   logic [3:0] dev_sel_s1n_32;
 
 
-  tl_h2d_t tl_sm1_33_us_h2d [2];
-  tl_d2h_t tl_sm1_33_us_d2h [2];
+  tl_h2d_t tl_sm1_33_us_h2d [1];
+  tl_d2h_t tl_sm1_33_us_d2h [1];
 
   tl_h2d_t tl_sm1_33_ds_h2d ;
   tl_d2h_t tl_sm1_33_ds_d2h ;
 
 
-  tl_h2d_t tl_sm1_50_us_h2d [2];
-  tl_d2h_t tl_sm1_50_us_d2h [2];
+  tl_h2d_t tl_sm1_50_us_h2d [1];
+  tl_d2h_t tl_sm1_50_us_d2h [1];
 
   tl_h2d_t tl_sm1_50_ds_h2d ;
   tl_d2h_t tl_sm1_50_ds_d2h ;
 
 
-  tl_h2d_t tl_sm1_53_us_h2d [2];
-  tl_d2h_t tl_sm1_53_us_d2h [2];
+  tl_h2d_t tl_sm1_53_us_h2d [1];
+  tl_d2h_t tl_sm1_53_us_d2h [1];
 
   tl_h2d_t tl_sm1_53_ds_h2d ;
   tl_d2h_t tl_sm1_53_ds_d2h ;
 
 
-  tl_h2d_t tl_sm1_54_us_h2d [2];
-  tl_d2h_t tl_sm1_54_us_d2h [2];
+  tl_h2d_t tl_sm1_54_us_h2d [1];
+  tl_d2h_t tl_sm1_54_us_d2h [1];
 
   tl_h2d_t tl_sm1_54_ds_h2d ;
   tl_d2h_t tl_sm1_54_ds_d2h ;
 
-  tl_h2d_t tl_sm1_46_us_h2d [2];
-  tl_d2h_t tl_sm1_46_us_d2h [2];
+  tl_h2d_t tl_sm1_46_us_h2d [1];
+  tl_d2h_t tl_sm1_46_us_d2h [1];
 
   tl_h2d_t tl_sm1_46_ds_h2d ;
   tl_d2h_t tl_sm1_46_ds_d2h ;
 
 
-  tl_h2d_t tl_sm1_47_us_h2d [2];
-  tl_d2h_t tl_sm1_47_us_d2h [2];
+  tl_h2d_t tl_sm1_47_us_h2d [1];
+  tl_d2h_t tl_sm1_47_us_d2h [1];
 
   tl_h2d_t tl_sm1_47_ds_h2d ;
   tl_d2h_t tl_sm1_47_ds_d2h ;
 
 
-  tl_h2d_t tl_sm1_48_us_h2d [2];
-  tl_d2h_t tl_sm1_48_us_d2h [2];
+  tl_h2d_t tl_sm1_48_us_h2d [1];
+  tl_d2h_t tl_sm1_48_us_d2h [1];
 
   tl_h2d_t tl_sm1_48_ds_h2d ;
   tl_d2h_t tl_sm1_48_ds_d2h ;
 
-  tl_h2d_t tl_sm1_52_us_h2d [2];
-  tl_d2h_t tl_sm1_52_us_d2h [2];
+  tl_h2d_t tl_sm1_52_us_h2d [1];
+  tl_d2h_t tl_sm1_52_us_d2h [1];
 
   tl_h2d_t tl_sm1_52_ds_h2d ;
   tl_d2h_t tl_sm1_52_ds_d2h ;
 
-  tl_h2d_t tl_sm1_60_us_h2d [2];
-  tl_d2h_t tl_sm1_60_us_d2h [2];
+  tl_h2d_t tl_sm1_60_us_h2d [1];
+  tl_d2h_t tl_sm1_60_us_d2h [1];
 
   tl_h2d_t tl_sm1_60_ds_h2d ;
   tl_d2h_t tl_sm1_60_ds_d2h ;
 
 
-  tl_h2d_t tl_sm1_61_us_h2d [2];
-  tl_d2h_t tl_sm1_61_us_d2h [2];
+  tl_h2d_t tl_sm1_61_us_h2d [1];
+  tl_d2h_t tl_sm1_61_us_d2h [1];
 
   tl_h2d_t tl_sm1_61_ds_h2d ;
   tl_d2h_t tl_sm1_61_ds_d2h ;
 
-  tl_h2d_t tl_sm1_65_us_h2d [2];
-  tl_d2h_t tl_sm1_65_us_d2h [2];
+  tl_h2d_t tl_sm1_65_us_h2d [1];
+  tl_d2h_t tl_sm1_65_us_d2h [1];
 
   tl_h2d_t tl_sm1_65_ds_h2d ;
   tl_d2h_t tl_sm1_65_ds_d2h ;
 
 
-  tl_h2d_t tl_sm1_66_us_h2d [2];
-  tl_d2h_t tl_sm1_66_us_d2h [2];
+  tl_h2d_t tl_sm1_66_us_h2d [1];
+  tl_d2h_t tl_sm1_66_us_d2h [1];
 
   tl_h2d_t tl_sm1_66_ds_h2d ;
   tl_d2h_t tl_sm1_66_ds_d2h ;
 
 
-  tl_h2d_t tl_sm1_67_us_h2d [2];
-  tl_d2h_t tl_sm1_67_us_d2h [2];
+  tl_h2d_t tl_sm1_67_us_h2d [1];
+  tl_d2h_t tl_sm1_67_us_d2h [1];
 
   tl_h2d_t tl_sm1_67_ds_h2d ;
   tl_d2h_t tl_sm1_67_ds_d2h ;
@@ -199,8 +199,8 @@ module xbar_main_rot (
 
   // Create steering signal
   
-  assign tl_sm1_28_us_h2d[1] = tl_s1n_32_ds_h2d[0];
-  assign tl_s1n_32_ds_d2h[0] = tl_sm1_28_us_d2h[1];
+  // assign tl_sm1_28_us_h2d[0] = tl_s1n_32_ds_h2d[0];
+  // assign tl_s1n_32_ds_d2h[0] = tl_sm1_28_us_d2h[0];
 
   assign tl_sm1_33_us_h2d[0] = tl_s1n_32_ds_h2d[1];
   assign tl_s1n_32_ds_d2h[1] = tl_sm1_33_us_d2h[0];
@@ -238,16 +238,16 @@ module xbar_main_rot (
   assign tl_sm1_66_us_h2d[0] = tl_s1n_32_ds_h2d[12];
   assign tl_s1n_32_ds_d2h[12] = tl_sm1_66_us_d2h[0];
 
-  assign tl_sm1_67_us_h2d[0] = tl_s1n_32_ds_h2d[13];
-  assign tl_s1n_32_ds_d2h[13] = tl_sm1_67_us_d2h[0];
+  assign tl_sm1_67_us_h2d[0] = tl_s1n_32_ds_h2d[0];
+  assign tl_s1n_32_ds_d2h[0] = tl_sm1_67_us_d2h[0];
 
 
   assign tl_s1n_32_us_h2d = tl_host_i;
   assign tl_host_o = tl_s1n_32_us_d2h;
 
 
-  assign tl_rom_ctrl__rom_o = tl_sm1_28_ds_h2d;
-  assign tl_sm1_28_ds_d2h = tl_rom_ctrl__rom_i;
+  // assign tl_rom_ctrl__rom_o = tl_sm1_28_ds_h2d;
+  // assign tl_sm1_28_ds_d2h = tl_rom_ctrl__rom_i;
 
   assign tl_rom_ctrl__regs_o = tl_sm1_33_ds_h2d;
   assign tl_sm1_33_ds_d2h = tl_rom_ctrl__regs_i;
@@ -292,14 +292,15 @@ module xbar_main_rot (
 
   always_comb begin
     // default steering to generate error response if address is not within the range
-    dev_sel_s1n_32 = 4'd14;
+    dev_sel_s1n_32 = 4'd12;
     tl_s1n_32_us_h2d_mask = tl_s1n_32_us_h2d;
-    if ((tl_s1n_32_us_h2d.a_address &
-         ~(ADDR_MASK_ROM_CTRL__ROM_ROT)) == ADDR_SPACE_ROM_CTRL__ROM_ROT) begin
-      dev_sel_s1n_32 = 4'd0;
-      tl_s1n_32_us_h2d_mask.a_address = tl_s1n_32_us_h2d.a_address & ADDR_MASK_ROM_CTRL__ROM_ROT;
+    // if ((tl_s1n_32_us_h2d.a_address &
+    //      ~(ADDR_MASK_ROM_CTRL__ROM_ROT)) == ADDR_SPACE_ROM_CTRL__ROM_ROT) begin
+    //   dev_sel_s1n_32 = 4'd0;
+    //   tl_s1n_32_us_h2d_mask.a_address = tl_s1n_32_us_h2d.a_address & ADDR_MASK_ROM_CTRL__ROM_ROT;
 
-    end else if ((tl_s1n_32_us_h2d.a_address &
+    // end else 
+    if ((tl_s1n_32_us_h2d.a_address &
                   ~(ADDR_MASK_ROM_CTRL__REGS_ROT)) == ADDR_SPACE_ROM_CTRL__REGS_ROT) begin
       dev_sel_s1n_32 = 4'd1;
       tl_s1n_32_us_h2d_mask.a_address = tl_s1n_32_us_h2d.a_address & ADDR_MASK_ROM_CTRL__REGS_ROT;
@@ -358,7 +359,7 @@ module xbar_main_rot (
       tl_s1n_32_us_h2d_mask.a_address = tl_s1n_32_us_h2d.a_address & ADDR_MASK_RS_DECODE;
     end else if ((tl_s1n_32_us_h2d.a_address &
                   ~(ADDR_MASK_PUF)) == ADDR_SPACE_PUF) begin
-      dev_sel_s1n_32 = 5'd13;
+      dev_sel_s1n_32 = 5'd0;
       tl_s1n_32_us_h2d_mask.a_address = tl_s1n_32_us_h2d.a_address & ADDR_MASK_PUF;
     end
   end
@@ -366,26 +367,26 @@ module xbar_main_rot (
 
   // Instantiation phase
  
-  tlul_socket_m1 #(
-    .HReqDepth (12'h0),
-    .HRspDepth (12'h0),
-    .DRspPass  (1'b0),
-    .M         (3)
-  ) u_sm1_28 (
-    .clk_i        (clk_i),
-    .rst_ni       (rst_ni),
-    .tl_h_i       (tl_sm1_28_us_h2d),
-    .tl_h_o       (tl_sm1_28_us_d2h),
-    .tl_d_o       (tl_sm1_28_ds_h2d),
-    .tl_d_i       (tl_sm1_28_ds_d2h)
-  );
+  // tlul_socket_m1 #(
+  //   .HReqDepth (12'h0),
+  //   .HRspDepth (12'h0),
+  //   .DRspPass  (1'b0),
+  //   .M         (1)
+  // ) u_sm1_28 (
+  //   .clk_i        (clk_i),
+  //   .rst_ni       (rst_ni),
+  //   .tl_h_i       (tl_sm1_28_us_h2d),
+  //   .tl_h_o       (tl_sm1_28_us_d2h),
+  //   .tl_d_o       (tl_sm1_28_ds_h2d),
+  //   .tl_d_i       (tl_sm1_28_ds_d2h)
+  // );
   
   tlul_socket_m1 #(
     .HReqDepth (8'h0),
     .HRspDepth (8'h0),
     .DReqPass  (1'b0),
     .DRspPass  (1'b0),
-    .M         (2)
+    .M         (1)
   ) u_sm1_33 (
     .clk_i        (clk_i),
     .rst_ni       (rst_ni),
@@ -400,7 +401,7 @@ module xbar_main_rot (
     .HRspDepth (8'h0),
     .DReqPass  (1'b0),
     .DRspPass  (1'b0),
-    .M         (2)
+    .M         (1)
   ) u_sm1_50 (
     .clk_i        (clk_i),
     .rst_ni       (rst_ni),
@@ -415,7 +416,7 @@ module xbar_main_rot (
     .HRspDepth (8'h0),
     .DReqPass  (1'b0),
     .DRspPass  (1'b0),
-    .M         (2)
+    .M         (1)
   ) u_sm1_53 (
     .clk_i        (clk_i),
     .rst_ni       (rst_ni),
@@ -430,7 +431,7 @@ module xbar_main_rot (
     .HRspDepth (8'h0),
     .DReqPass  (1'b0),
     .DRspPass  (1'b0),
-    .M         (2)
+    .M         (1)
   ) u_sm1_54 (
     .clk_i        (clk_i),
     .rst_ni       (rst_ni),
@@ -445,7 +446,7 @@ module xbar_main_rot (
     .HRspDepth (8'h0),
     .DReqPass  (1'b0),
     .DRspPass  (1'b0),
-    .M         (2)
+    .M         (1)
   ) u_sm1_46 (
     .clk_i        (clk_i),
     .rst_ni       (rst_ni),
@@ -459,7 +460,7 @@ module xbar_main_rot (
     .HRspDepth (8'h0),
     .DReqPass  (1'b0),
     .DRspPass  (1'b0),
-    .M         (2)
+    .M         (1)
   ) u_sm1_47 (
     .clk_i        (clk_i),
     .rst_ni       (rst_ni),
@@ -473,7 +474,7 @@ module xbar_main_rot (
     .HRspDepth (8'h0),
     .DReqPass  (1'b0),
     .DRspPass  (1'b0),
-    .M         (2)
+    .M         (1)
   ) u_sm1_48 (
     .clk_i        (clk_i),
     .rst_ni       (rst_ni),
@@ -488,7 +489,7 @@ module xbar_main_rot (
     .HRspDepth (8'h0),
     .DReqPass  (1'b0),
     .DRspPass  (1'b0),
-    .M         (2)
+    .M         (1)
   ) u_sm1_52 (
     .clk_i        (clk_i),
     .rst_ni       (rst_ni),
@@ -502,7 +503,7 @@ module xbar_main_rot (
     .HRspDepth (8'h0),
     .DReqPass  (1'b0),
     .DRspPass  (1'b0),
-    .M         (2)
+    .M         (1)
   ) u_sm1_60 (
     .clk_i        (clk_i),
     .rst_ni       (rst_ni),
@@ -516,7 +517,7 @@ module xbar_main_rot (
     .HRspDepth (8'h0),
     .DReqPass  (1'b0),
     .DRspPass  (1'b0),
-    .M         (2)
+    .M         (1)
   ) u_sm1_61 (
     .clk_i        (clk_i),
     .rst_ni       (rst_ni),
@@ -530,7 +531,7 @@ module xbar_main_rot (
     .HRspDepth (8'h0),
     .DReqPass  (1'b0),
     .DRspPass  (1'b0),
-    .M         (2)
+    .M         (1)
   ) u_sm1_65 (
     .clk_i        (clk_i),
     .rst_ni       (rst_ni),
@@ -544,7 +545,7 @@ module xbar_main_rot (
     .HRspDepth (8'h0),
     .DReqPass  (1'b0),
     .DRspPass  (1'b0),
-    .M         (2)
+    .M         (1)
   ) u_sm1_66 (
     .clk_i        (clk_i),
     .rst_ni       (rst_ni),
@@ -558,7 +559,7 @@ module xbar_main_rot (
     .HRspDepth (8'h0),
     .DReqPass  (1'b0),
     .DRspPass  (1'b0),
-    .M         (2)
+    .M         (1)
   ) u_sm1_67 (
     .clk_i        (clk_i),
     .rst_ni       (rst_ni),
@@ -573,7 +574,7 @@ module xbar_main_rot (
     .HRspDepth (4'h0),
     .DReqDepth (56'h0),
     .DRspDepth (56'h0),
-    .N         (14)
+    .N         (13)
   ) u_s1n_32 (
     .clk_i        (clk_i),
     .rst_ni       (rst_ni),

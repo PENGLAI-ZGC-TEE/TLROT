@@ -70,7 +70,8 @@ module tlul_socket_m1 #(
   // Required ID width to distinguish between host ports
   //  Used in response steering
   localparam int unsigned IDW   = top_pkg::TL_AIW;
-  localparam int unsigned STIDW = $clog2(M);
+  // localparam int unsigned STIDW = $clog2(M);
+  localparam int unsigned STIDW = 1;
 
   tlul_pkg::tl_h2d_t hreq_fifo_o [M];
   tlul_pkg::tl_d2h_t hrsp_fifo_i [M];

@@ -33,7 +33,8 @@ module prim_arbiter_ppc #(
   parameter bit EnDataPort = 1,
 
   // Derived parameters
-  localparam int IdxW = $clog2(N)
+  // localparam int IdxW = $clog2(N)
+  localparam int IdxW = 1
 ) (
   input clk_i,
   input rst_ni,

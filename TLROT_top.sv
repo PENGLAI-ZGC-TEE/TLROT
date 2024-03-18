@@ -101,15 +101,15 @@ logic       es_rng_fips_o;
 // end
 
 assign tl_i.a_valid = a_valid;
-assign tl_i.a_opcode = tl_a_op_e'(a_bits_opcode);  
-assign tl_i.a_param = a_bits_param;
-assign tl_i.a_size = a_bits_size;
-assign tl_i.a_source = a_bits_source;
-assign tl_i.a_address = a_bits_address;
-assign tl_i.a_mask = a_bits_mask;
-assign tl_i.a_data = a_bits_data;
+assign tl_i.a_opcode = a_valid ? tl_a_op_e'(a_bits_opcode) : tl_a_op_e'(0);  
+assign tl_i.a_param = a_valid ? a_bits_param : 0;
+assign tl_i.a_size = a_valid ? a_bits_size : 0;
+assign tl_i.a_source = a_valid ? a_bits_source : 0;
+assign tl_i.a_address = a_valid ? a_bits_address : 0;
+assign tl_i.a_mask = a_valid ? a_bits_mask : 0;
+assign tl_i.a_data = a_valid ? a_bits_data : 0;
 
-assign tl_i.a_user = tlul_pkg::TL_A_USER_DEFAULT;
+assign tl_i.a_user =a_valid ?  tlul_pkg::TL_A_USER_DEFAULT : 0;
 // assign tl_o.d_user = tlul_pkg:TL_D_USER_DEFAULT;
 
 assign a_ready = tl_o.a_ready;
