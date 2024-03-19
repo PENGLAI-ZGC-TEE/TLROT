@@ -29,7 +29,7 @@ module PUF1bit(
     output [1:0] response
 );
 
-`ifdef FPGA
+`ifdef SYNTHESIS
 
 wire [127:0]  mux_in_a;      //RO output to MUX
 wire [127:0]  mux_in_b;
