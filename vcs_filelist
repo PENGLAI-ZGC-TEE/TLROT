@@ -358,6 +358,8 @@ $NOOP_HOME/src/main/resources/TLROT/src/zgc_ip_rs_code_1.0/rtl/data-rom.sv
 $NOOP_HOME/src/main/resources/TLROT/src/zgc_ip_rs_code_1.0/rtl/inverse.sv
 $NOOP_HOME/src/main/resources/TLROT/src/zgc_ip_rs_code_1.0/rtl/syndrome.sv
 $NOOP_HOME/src/main/resources/TLROT/src/zgc_ip_puf_1.0/rtl/AP0BP1.sv
+$NOOP_HOME/src/main/resources/TLROT/src/zgc_ip_puf_1.0/rtl/LUT1.sv
+$NOOP_HOME/src/main/resources/TLROT/src/zgc_ip_puf_1.0/rtl/LUT3.sv
 $NOOP_HOME/src/main/resources/TLROT/src/zgc_ip_puf_1.0/rtl/Comp.sv
 $NOOP_HOME/src/main/resources/TLROT/src/zgc_ip_puf_1.0/rtl/Counter.sv
 $NOOP_HOME/src/main/resources/TLROT/src/zgc_ip_puf_1.0/rtl/PUF128.sv
