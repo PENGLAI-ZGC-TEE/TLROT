@@ -299,6 +299,8 @@
 ../src/main/resources/TLROT/src/lowrisc_ip_hmac_0.1/rtl/hmac_reg_top.sv
 ../src/main/resources/TLROT/src/lowrisc_ip_hmac_0.1/rtl/hmac_core.sv
 ../src/main/resources/TLROT/src/lowrisc_ip_hmac_0.1/rtl/hmac.sv
+../src/main/resources/TLROT/src/zgc_ip_sram/sram_array_1p1024x39m39.sv
+../src/main/resources/TLROT/src/zgc_ip_sram/sram_array_1p128x312m39.sv
 ../src/main/resources/TLROT/src/lowrisc_ip_otbn_0.1/rtl/otbn_controller.sv
 ../src/main/resources/TLROT/src/lowrisc_ip_otbn_0.1/rtl/otbn_decoder.sv
 ../src/main/resources/TLROT/src/lowrisc_ip_otbn_0.1/rtl/otbn_predecode.sv

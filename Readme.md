@@ -9,7 +9,7 @@
 ## 可信根存储说明
 可信根中存在一个32KB的ROM和两块4KB的SRAM，具体如下：
 1. ROM：位于src/main/resources/TLROT/src/lowrisc_prim_generic_rom_0/rtl/prim_generic_rom.sv， 64bit位宽，32KB，depth：'h4000
-2. SRAM: 分别是1024 * 39和128 * 312（位宽312）都在src/main/resources/TLROT/src/lowrisc_ip_otbn_0.1/rtl/otbn.sv文件中，名称是prim_ram_1p_scr，例化为imem和dmem，其底层在src/main/resources/TLROT/src/lowrisc_prim_generic_ram_1p_0/rtl/prim_generic_ram_1p.sv，有一个读端口一个写端口,目前均无MBIST端口，不需要bit write功能
+2. SRAM: 分别是1024 * 39和128 * 312（位宽312）都在src/main/resources/TLROT/src/lowrisc_ip_otbn_0.1/rtl/otbn.sv文件中，名称是prim_ram_1p_scr，例化为imem和dmem，其底层在src/main/resources/TLROT/src/lowrisc_prim_generic_ram_1p_0/rtl/prim_generic_ram_1p.sv，sram_array_1p128x312m39 和 sram_array_1p1024x39m39，为单端口器件，有一个读端口一个写端口,目前均无MBIST端口，均支持最小写入39bit数据
 
 ## 可信根DC综合说明
 1. 综合时需define SYNTHESIS

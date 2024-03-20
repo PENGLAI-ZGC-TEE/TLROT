@@ -235,6 +235,8 @@ $NOOP_HOME/src/main/resources/TLROT/src/lowrisc_ip_hmac_0.1/rtl/hmac_reg_pkg.sv
 $NOOP_HOME/src/main/resources/TLROT/src/lowrisc_ip_hmac_0.1/rtl/hmac_reg_top.sv
 $NOOP_HOME/src/main/resources/TLROT/src/lowrisc_ip_hmac_0.1/rtl/hmac_core.sv
 $NOOP_HOME/src/main/resources/TLROT/src/lowrisc_ip_hmac_0.1/rtl/hmac.sv
+$NOOP_HOME/src/main/resources/TLROT/src/zgc_ip_sram/sram_array_1p1024x39m39.sv
+$NOOP_HOME/src/main/resources/TLROT/src/zgc_ip_sram/sram_array_1p128x312m39.sv
 $NOOP_HOME/src/main/resources/TLROT/src/lowrisc_ip_otbn_0.1/rtl/otbn_controller.sv
 $NOOP_HOME/src/main/resources/TLROT/src/lowrisc_ip_otbn_0.1/rtl/otbn_decoder.sv
 $NOOP_HOME/src/main/resources/TLROT/src/lowrisc_ip_otbn_0.1/rtl/otbn_predecode.sv

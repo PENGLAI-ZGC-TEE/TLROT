@@ -59,20 +59,45 @@ module prim_generic_ram_1p import prim_ram_1p_pkg::*; #(
 
   // using always instead of always_ff to avoid 'ICPD  - illegal combination of drivers' error
   // thrown when using $readmemh system task to backdoor load an image
-  always @(posedge clk_i) begin
-    if (req_i) begin
-      if (write_i) begin
-        for (int i=0; i < MaskWidth; i = i + 1) begin
-          if (wmask[i]) begin
-            mem[addr_i][i*DataBitsPerMask +: DataBitsPerMask] <=
-              wdata_i[i*DataBitsPerMask +: DataBitsPerMask];
-          end
-        end
-      end else begin
-        rdata_o <= mem[addr_i];
-      end
-    end
+  // always @(posedge clk_i) begin
+  //   if (req_i) begin
+  //     if (write_i) begin
+  //       for (int i=0; i < MaskWidth; i = i + 1) begin
+  //         if (wmask[i]) begin
+  //           mem[addr_i][i*DataBitsPerMask +: DataBitsPerMask] <=
+  //             wdata_i[i*DataBitsPerMask +: DataBitsPerMask];
+  //         end
+  //       end
+  //     end else begin
+  //       rdata_o <= mem[addr_i];
+  //     end
+  //   end
+  // end
+
+// Conditional instantiation based on MaskWidth
+generate
+  if (MaskWidth == 1) begin : gen_array_1024x39
+    sram_array_1p1024x39m39 sram_imem (
+      .clk_i(clk_i),
+      .req_i(req_i),
+      .write_i(write_i),
+      .addr_i(addr_i),
+      .wdata_i(wdata_i),
+      .wmask_i(wmask),
+      .rdata_o(rdata_o)
+    );
+  end else begin : gen_array_128x312
+    sram_array_1p128x312m39 sram_dmem (
+      .clk_i(clk_i),
+      .req_i(req_i),
+      .write_i(write_i),
+      .addr_i(addr_i),
+      .wdata_i(wdata_i),
+      .wmask_i(wmask),
+      .rdata_o(rdata_o)
+    );
   end
+endgenerate
 
   `include "prim_util_memload.svh"
 `endif
