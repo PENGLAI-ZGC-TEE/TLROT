@@ -34,7 +34,8 @@ module prim_arbiter_ppc #(
 
   // Derived parameters
   // localparam int IdxW = $clog2(N)
-  localparam int IdxW = 1
+  // localparam int IdxW = 1
+  parameter int IdxW = 1
 ) (
   input clk_i,
   input rst_ni,

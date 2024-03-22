@@ -24,8 +24,8 @@ module rom_ctrl_compare
   output mubi4_t                     good_o,
 
   // CSR inputs for DIGEST and EXP_DIGEST. Ordered with word 0 as LSB.
-  input logic [NumWords*32-1:0]      digest_i,
-  input logic [NumWords*32-1:0]      exp_digest_i,
+  input logic [NumWords*64-1:0]      digest_i,
+  input logic [NumWords*64-1:0]      exp_digest_i,
 
   // To alert system
   output logic                       alert_o

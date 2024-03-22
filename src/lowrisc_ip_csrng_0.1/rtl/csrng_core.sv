@@ -1014,7 +1014,8 @@ module csrng_core import csrng_pkg::*; #(
   prim_arbiter_ppc #(
     .EnDataPort(0),    // Ignore data port
     .N(NApps),  // Number of request ports
-    .DW(1) // Data width
+    .DW(1), // Data width
+    .IdxW($clog2(NApps))
   ) u_prim_arbiter_ppc_acmd (
     .clk_i    (clk_i),
     .rst_ni   (rst_ni),

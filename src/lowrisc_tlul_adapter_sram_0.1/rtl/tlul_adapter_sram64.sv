@@ -128,16 +128,17 @@ module tlul_adapter_sram64
   end
 
   // tlul protocol check
-  tlul_err u_err (
-    .clk_i,
-    .rst_ni,
-    .tl_i(tl_i),
-    .err_o (tlul_error)
-  );
+  // tlul_err u_err (
+  //   .clk_i,
+  //   .rst_ni,
+  //   .tl_i(tl_i),
+  //   .err_o (tlul_error)
+  // );
 
   //zdr: del tlul err for only support 32bit DW
   logic tlul_error64;
-  assign tlul_error64 = tlul_error? 1'b0 : 1'b0;
+  // assign tlul_error64 = tlul_error? 1'b0 : 1'b0;
+  assign tlul_error64 = 1'b0;
   
   // error return is transactional and thus does not used the "latched" intg_err signal
   assign error_det = wr_attr_error | wr_vld_error | rd_vld_error | instr_error |
@@ -278,15 +279,17 @@ module tlul_adapter_sram64
   // we statically calculate the correct integrity values for these parameters here so that
   // they do not have to be supplied externally.
   logic [top_pkg::TL_DW64-1:0] unused_instr, unused_data;
-  logic [DataIntgWidth-1:0] error_instr_integ, error_data_integ;
-  tlul_data_integ_enc u_tlul_data_integ_enc_instr (
-    .data_i(DataMaxWidth'(DataWhenInstrError)),
-    .data_intg_o({error_instr_integ, unused_instr})
-  );
-  tlul_data_integ_enc u_tlul_data_integ_enc_data (
-    .data_i(DataMaxWidth'(DataWhenError)),
-    .data_intg_o({error_data_integ, unused_data})
-  );
+  // logic [DataIntgWidth-1:0] error_instr_integ, error_data_integ;
+  // tlul_data_integ_enc u_tlul_data_integ_enc_instr (
+  //   .data_i(DataMaxWidth'(DataWhenInstrError)),
+  //   .data_intg_o({error_instr_integ, unused_instr})
+  // );
+  // tlul_data_integ_enc u_tlul_data_integ_enc_data (
+  //   .data_i(DataMaxWidth'(DataWhenError)),
+  //   .data_intg_o({error_data_integ, unused_data})
+  // );
+  logic [DataIntgWidth-1:0] error_instr_integ = '0;
+  logic [DataIntgWidth-1:0]  error_data_integ = '0;
 
   logic [DataIntgWidth-1:0] error_blanking_integ;
   assign error_blanking_integ = (prim_mubi_pkg::mubi4_test_true_strict(reqfifo_rdata.instr_type)) ?

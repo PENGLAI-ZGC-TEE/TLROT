@@ -40,7 +40,7 @@ module TLROT_top (
     output          d_valid_rom,
     output [2:0]   d_bits_opcode_rom,
     output [2:0]   d_bits_param_rom,
-    output [1:0]   d_bits_size_rom,
+    output [2:0]   d_bits_size_rom,
     output [7:0]   d_bits_source_rom,
     output         d_bits_sink_rom,
     output [63:0]  d_bits_data_rom,

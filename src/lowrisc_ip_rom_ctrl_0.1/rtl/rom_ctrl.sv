@@ -347,7 +347,7 @@ module rom_ctrl
   logic         digest_de;
   logic [63:0]  exp_digest_word_d;
   logic         exp_digest_de;
-  logic [2:0]   exp_digest_idx;
+  logic [1:0]   exp_digest_idx;
 
   logic         checker_alert;
 
