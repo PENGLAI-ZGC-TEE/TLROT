@@ -26,6 +26,15 @@ module rs_decode
     .intg_err_o                        (                 )
 );
 
+assign hw2reg.ctrl_signals.decode_en.de = 1'd0;
+assign hw2reg.ctrl_signals.clrn.de = 1'd0;
+always_comb begin
+  for (int i = 0; i < 50; i++) begin
+    hw2reg.encoded_data_in[i].de = 1'd0;
+  end
+end
+
+
   rs_decode_wrapper  u_rs_decode_wrapper (
     .clk                     ( clk_i        ),
     .rst_n                   ( rst_ni       ),

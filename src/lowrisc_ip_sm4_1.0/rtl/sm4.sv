@@ -31,6 +31,23 @@ assign hw2reg.result_out[1].de={32(ready_out)};
 assign hw2reg.result_out[2].de={32(ready_out)};
 assign hw2reg.result_out[3].de={32(ready_out)};
 */
+
+assign hw2reg.ctrl_signals.sm4_enable_in.de = 1'd0;
+assign hw2reg.ctrl_signals.encdec_enable_in.de = 1'd0;
+assign hw2reg.ctrl_signals.encdec_sel_in.de = 1'd0;
+assign hw2reg.ctrl_signals.valid_in.de = 1'd0;
+assign hw2reg.data_in[0].de = 1'd0;
+assign hw2reg.data_in[1].de = 1'd0;
+assign hw2reg.data_in[2].de = 1'd0;
+assign hw2reg.data_in[3].de = 1'd0;
+assign hw2reg.ctrl_signals.enable_key_exp_in.de = 1'd0;
+assign hw2reg.ctrl_signals.user_key_valid_in.de = 1'd0;
+assign hw2reg.key[0].de = 1'd0;
+assign hw2reg.key[1].de = 1'd0;
+assign hw2reg.key[2].de = 1'd0;
+assign hw2reg.key[3].de = 1'd0;
+
+
 sm4_top  u_sm4_top (
     .clk                     ( clk_i        ),
     .reset_n                 ( rst_ni       ),

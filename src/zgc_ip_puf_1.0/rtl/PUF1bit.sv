@@ -30,6 +30,10 @@ module PUF1bit(
 );
 
 `ifdef SYNTHESIS
+// `define TEST
+// `ifdef TEST
+parameter NUM_LUTS = 5;
+parameter  NUM_OSCILLATORS = 128;
 
 wire [127:0]  mux_in_a;      //RO output to MUX
 wire [127:0]  mux_in_b;
@@ -40,8 +44,8 @@ wire [6:0] dec_in_b;
 wire [31:0] cnt_out_a;       // counter output
 wire [31:0] cnt_out_b;
 wire cnt_ctrl;              //timer output to control the counter
-(* keep="true" *) wire [639:0] ca;            //RO lines
-(* keep="true" *) wire [639:0] cb;
+// (* keep="true" *) wire [639:0] ca;            //RO lines
+// (* keep="true" *) wire [639:0] cb;
 wire [127:0] ena;           //RO enable signle
 wire [127:0] enb;
 wire cnt_done, cnt_done_a, cnt_done_b;  //counter ready to read data
@@ -53,85 +57,148 @@ wire cnt_done, cnt_done_a, cnt_done_b;  //counter ready to read data
 //wire [639:0] ca_test;            //RO lines
 //wire [639:0] cb_test;
 
-genvar i;
-generate
-  for (i=0; i < 128; i=i+1)
-  begin: puf_a
-     LUT3  #(.INIT(8'h7f)) LUTa0 (
-      .O(ca[0+5*i]),
-      .I0(ena[i]),
-      .I1(rst),
-      .I2(ca[4+5*i])
-     );
-     LUT1 #(.INIT(2'h1)) LUTa1(
-      .O(ca[1+5*i]),
-      .I0(ca[0+5*i])
-    );
+ genvar i;
+  generate
+    for (i=0; i < NUM_OSCILLATORS; i=i+1) begin: puf_a
+    (* keep="true" *)  wire [NUM_LUTS-1:0] ca; 
 
-    LUT1 #(.INIT(2'h1)) LUTa2(
-        .O(ca[2+5*i]),
-        .I0(ca[1+5*i])
-    );
+      LUT3 #(.INIT(8'h7F)) LUTa_init (
+        .O(ca[0]),
+        .I0(ena[i]),
+        .I1(rst),
+        .I2(ca[NUM_LUTS-1])
+      );
 
-    LUT1 #(.INIT(2'h1)) LUTa3(
-        .O(ca[3+5*i]),
-        .I0(ca[2+5*i])
-    );
+    //   assign #2 ca[0] = ena[i] & rst & !ca[NUM_LUTS-1];
 
-    LUT1 #(.INIT(2'h1)) LUTa4(
-        .O(ca[4+5*i]),
-        .I0(ca[3+5*i])
-    );
+      genvar j;
+      for (j=1; j < NUM_LUTS; j=j+1) begin: LUT_chain
+        LUT1 #(.INIT(2'h1)) LUT (
+          .O(ca[j]),
+          .I0(ca[j-1])
+        );
+      end
 
-    LUT1 #(.INIT(2'h1)) LUTa5(
+      LUT1 #(.INIT(2'h1)) LUTa_last (
         .O(ro_a[i]),
-        .I0(ca[i*5+2])
-    );
-    assign mux_in_a[i] = ro_a[i];
-    assign ena[i] = dec_out_a[i];
+        .I0(ca[NUM_LUTS-3]) 
+      );
 
-  end
-endgenerate
+      assign mux_in_a[i] = ro_a[i];
+      assign ena[i] = dec_out_a[i];
+    end
+  endgenerate
 
-genvar j;
-generate
-  for (j=0; j < 128; j=j+1)
-  begin: puf_b
-     LUT3  #(.INIT(8'h7f)) LUTb0 (
-      .O(cb[0+5*j]),
-      .I0(enb[j]),
-      .I1(rst),
-      .I2(cb[4+5*j])
-     );
-     LUT1 #(.INIT(2'h1)) LUTb1(
-      .O(cb[1+5*j]),
-      .I0(cb[0+5*j])
-    );
+genvar m;
+  generate
+    for (m=0; m < NUM_OSCILLATORS; m=m+1) begin: puf_b
+    (* keep="true" *)  wire [NUM_LUTS-1:0] cb; 
 
-    LUT1 #(.INIT(2'h1)) LUTb2(
-        .O(cb[2+5*j]),
-        .I0(cb[1+5*j])
-    );
+      LUT3 #(.INIT(8'h7F)) LUTa_init (
+        .O(cb[0]),
+        .I0(enb[m]),
+        .I1(rst),
+        .I2(cb[NUM_LUTS-1])
+      );
+    //   assign #1 cb[0] = enb[m] & rst & !cb[NUM_LUTS-1];
 
-    LUT1 #(.INIT(2'h1)) LUTb3(
-        .O(cb[3+5*j]),
-        .I0(cb[2+5*j])
-    );
+      genvar n;
+      for (n=1; n < NUM_LUTS; n=n+1) begin: LUT_chain
+        LUT1 #(.INIT(2'h1)) LUT (
+          .O(cb[n]),
+          .I0(cb[n-1])
+        );
+      end
 
-    LUT1 #(.INIT(2'h1)) LUTb4(
-        .O(cb[4+5*j]),
-        .I0(cb[3+5*j])
-    );
+      LUT1 #(.INIT(2'h1)) LUTa_last (
+        .O(ro_b[m]),
+        .I0(cb[NUM_LUTS-3]) 
+      );
 
-    LUT1 #(.INIT(2'h1)) LUTb5(
-        .O(ro_b[j]),
-        .I0(cb[j*5+2])
-    );
-   assign mux_in_b[j] = ro_b[j];
-   assign enb[j] = dec_out_b[j];
+      assign mux_in_b[m] = ro_b[m];
+      assign enb[m] = dec_out_b[m];
+    end
+  endgenerate
 
-  end
-endgenerate
+// genvar i;
+// generate
+//   for (i=0; i < 128; i=i+1)
+//   begin: puf_a
+//      LUT3  #(.INIT(8'h7f)) LUTa0 (
+//       .O(ca[0+5*i]),
+//       .I0(ena[i]),
+//       .I1(rst),
+//       .I2(ca[4+5*i])
+//      );
+//      LUT1 #(.INIT(2'h1)) LUTa1(
+//       .O(ca[1+5*i]),
+//       .I0(ca[0+5*i])
+//     );
+
+//     LUT1 #(.INIT(2'h1)) LUTa2(
+//         .O(ca[2+5*i]),
+//         .I0(ca[1+5*i])
+//     );
+
+//     LUT1 #(.INIT(2'h1)) LUTa3(
+//         .O(ca[3+5*i]),
+//         .I0(ca[2+5*i])
+//     );
+
+//     LUT1 #(.INIT(2'h1)) LUTa4(
+//         .O(ca[4+5*i]),
+//         .I0(ca[3+5*i])
+//     );
+
+//     LUT1 #(.INIT(2'h1)) LUTa5(
+//         .O(ro_a[i]),
+//         .I0(ca[i*5+2])
+//     );
+//     assign mux_in_a[i] = ro_a[i];
+//     assign ena[i] = dec_out_a[i];
+
+//   end
+// endgenerate
+
+// genvar j;
+// generate
+//   for (j=0; j < 128; j=j+1)
+//   begin: puf_b
+//      LUT3  #(.INIT(8'h7f)) LUTb0 (
+//       .O(cb[0+5*j]),
+//       .I0(enb[j]),
+//       .I1(rst),
+//       .I2(cb[4+5*j])
+//      );
+//      LUT1 #(.INIT(2'h1)) LUTb1(
+//       .O(cb[1+5*j]),
+//       .I0(cb[0+5*j])
+//     );
+
+//     LUT1 #(.INIT(2'h1)) LUTb2(
+//         .O(cb[2+5*j]),
+//         .I0(cb[1+5*j])
+//     );
+
+//     LUT1 #(.INIT(2'h1)) LUTb3(
+//         .O(cb[3+5*j]),
+//         .I0(cb[2+5*j])
+//     );
+
+//     LUT1 #(.INIT(2'h1)) LUTb4(
+//         .O(cb[4+5*j]),
+//         .I0(cb[3+5*j])
+//     );
+
+//     LUT1 #(.INIT(2'h1)) LUTb5(
+//         .O(ro_b[j]),
+//         .I0(cb[j*5+2])
+//     );
+//    assign mux_in_b[j] = ro_b[j];
+//    assign enb[j] = dec_out_b[j];
+
+//   end
+// endgenerate
 
 //zdr: can be improved
 assign dec_in_b = challenge[6:0];
@@ -168,6 +235,7 @@ Timer #(.target(5'd15)) u_timer(
 
 Counter CounterA(
     .cnt_in(mux_out_a),
+    .clk(clk),
     .rst(rst),
     .cnt_out(cnt_out_a),
     .cnt_ctrl(cnt_ctrl),
@@ -177,6 +245,7 @@ Counter CounterA(
 
 Counter CounterB(
     .cnt_in(mux_out_b),
+    .clk(clk),
     .rst(rst),
     .cnt_out(cnt_out_b),
     .cnt_ctrl(cnt_ctrl),

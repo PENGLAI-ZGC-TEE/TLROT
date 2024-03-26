@@ -32,6 +32,14 @@ puf_reg_top  u_puf_reg_top (
     .intg_err_o                        ( )
 );
 
+assign hw2reg.ctrl_signals.mode_puf.de = 1'd0;
+assign hw2reg.ctrl_signals.enable_puf.de = 1'd0;
+assign hw2reg.ctrl_signals.ready_cha.de = 1'd0;
+assign hw2reg.challenge[0].de = 1'd0;
+assign hw2reg.challenge[1].de = 1'd0;
+assign hw2reg.challenge[2].de = 1'd0;
+assign hw2reg.challenge[3].de = 1'd0;
+
 
 PUF_core  u_PUF_core (
     .clk                     ( clk_i  ),
