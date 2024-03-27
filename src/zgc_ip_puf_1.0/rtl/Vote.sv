@@ -27,7 +27,7 @@ module Voter(
   input wire ready,
   input wire vote,
   input wire clear,
-  output reg done,
+  output wire done,
   input wire [`WIDTH-1:0] data_in,
   output reg [`WIDTH-1:0] data_out
 );
@@ -36,6 +36,7 @@ parameter  Threshold = 5; // ��ֵ
 
 //reg [127:0] data_out_reg;
 reg [5:0] sum [0:`WIDTH-1];
+reg [`WIDTH-1:0] done_reg;
 
 genvar i;
 generate
@@ -44,30 +45,31 @@ generate
         if(!rst) begin
             sum[i] <= 0;
             data_out[i] <= 0;
-            done <= 1'd0;
+            done_reg[i] <= 1'd0;
         end else if (ready) begin
             sum[i] <= data_in[i] + sum[i];
             data_out[i] <= 0;
-            done <= 1'd0;
+            done_reg[i] <= 1'd0;
         end else if (vote) begin
             if ( sum[i] >= Threshold ) begin
                 data_out[i] <= 1;
-                done <= 1'd1;
+                done_reg[i] <= 1'd1;
             end else begin
                 data_out[i] <= 0;
-                done <= 1'd1;
+                done_reg[i] <= 1'd1;
             end
         end else if (clear) begin
             sum[i] <= 0;
             data_out[i] <= 0;
-            done <= 1'd0;
+            done_reg[i] <= 1'd0;
         end else begin
             sum[i] <= sum[i];
             data_out[i] <= data_out[i];
-            done <= done;
+            done_reg[i] <= done_reg[i];
         end
       end
     end
+assign done = & done_reg;
 
 endgenerate
 
