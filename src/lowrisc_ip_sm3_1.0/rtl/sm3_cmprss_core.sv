@@ -109,7 +109,9 @@ wire                inpt_wrd_of_blk_cntr_clr;
 
 //管理tj寄存器
 always @(posedge clk or negedge rst_n) begin
-    if(~rst_n |cmprss_blk_res_finish) begin
+    if(~rst_n) begin
+        reg_tj          <=  32'h79cc4519;
+    end else if (cmprss_blk_res_finish) begin
         reg_tj          <=  32'h79cc4519;
     end
     else if(sm3_wj_wjj_vld_r)begin
@@ -224,7 +226,16 @@ end
 
 //寄存器组初值装填与迭代
 always @(posedge clk or negedge rst_n) begin
-    if((~rst_n) || sm3_res_valid_r1) begin
+    if(~rst_n) begin
+        reg_a	<=	32'h7380166f;//0;
+		reg_b	<=	32'h4914b2b9;//0;
+		reg_c	<=	32'h172442d7;//0;
+		reg_d	<=	32'hda8a0600;//0;
+		reg_e	<=	32'ha96f30bc;//0;
+		reg_f	<=	32'h163138aa;//0;
+		reg_g	<=	32'he38dee4d;//0;
+		reg_h	<=	32'hb0fb0e4e;//0;
+    end else if (sm3_res_valid_r1) begin
         reg_a	<=	32'h7380166f;//0;
 		reg_b	<=	32'h4914b2b9;//0;
 		reg_c	<=	32'h172442d7;//0;
@@ -269,8 +280,10 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 always @(posedge clk or negedge rst_n) begin
-    if((~rst_n) || sm3_res_valid_r1) begin
+    if(~rst_n) begin
         sm3_res                 <=  {32'h7380166f, 32'h4914b2b9, 32'h172442d7, 32'hda8a0600, 32'ha96f30bc, 32'h163138aa, 32'he38dee4d, 32'hb0fb0e4e};
+    end else if (sm3_res_valid_r1) begin
+        sm3_res                 <=  {32'h7380166f, 32'h4914b2b9, 32'h172442d7, 32'hda8a0600, 32'ha96f30bc, 32'h163138aa, 32'he38dee4d, 32'hb0fb0e4e};        
     end
     else if(cmprss_blk_res_finish)begin
         sm3_res                 <=  {reg_a,reg_b,reg_c,reg_d,reg_e,reg_f,reg_g,reg_h} ^ sm3_res;

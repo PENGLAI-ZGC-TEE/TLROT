@@ -51,7 +51,9 @@ module Counter(
     assign done = done_reg;
 
     always @(posedge cnt_in or negedge rst) begin
-        if (!rst || clear) begin
+        if (!rst) begin
+            cnt_out <= 32'd0;
+        end else if (clear) begin
             cnt_out <= 32'd0;
         end else if (cnt_ctrl) begin
             cnt_out <= cnt_out + 1'd1;
