@@ -30,6 +30,7 @@ package tl_main_rot_pkg;
   localparam logic [31:0] ADDR_SPACE_RS_ENCODE                = 32'h 3b170000;
   localparam logic [31:0] ADDR_SPACE_RS_DECODE                = 32'h 3b180000;
   localparam logic [31:0] ADDR_SPACE_PUF                      = 32'h 3b1c0000;
+  localparam logic [31:0] ADDR_SPACE_PUF2                     = 32'h 3b1d0000;
   
   // localparam logic [31:0] ADDR_SPACE_ROM_CTRL__ROM_ROT        = 32'h 44008000;
   // localparam logic [31:0] ADDR_SPACE_ROM_CTRL__REGS_ROT       = 32'h 411e0000;
@@ -54,9 +55,10 @@ package tl_main_rot_pkg;
   localparam logic [31:0] ADDR_MASK_RS_ENCODE                = 32'h 000001ff;
   localparam logic [31:0] ADDR_MASK_RS_DECODE                = 32'h 000001ff;
   localparam logic [31:0] ADDR_MASK_PUF                      = 32'h 0000003f;
+  localparam logic [31:0] ADDR_MASK_PUF2                     = 32'h 0000003f;
 
   localparam int N_HOST   = 1;
-  localparam int N_DEVICE = 14;
+  localparam int N_DEVICE = 15;
 
   typedef enum int {
     TlRomCtrlRom = 0,
@@ -72,7 +74,8 @@ package tl_main_rot_pkg;
     TlSm4 = 10,
     TlRsEncode = 11,
     TlRsDecode = 12,
-    TlPuf = 13
+    TlPuf = 13,
+    TlPuf2 = 14
   } tl_device_e;
 
   typedef enum int {

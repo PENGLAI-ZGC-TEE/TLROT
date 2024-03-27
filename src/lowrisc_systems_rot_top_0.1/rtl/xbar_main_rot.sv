@@ -36,6 +36,8 @@
 //       -> rs_decode
 //     -> sm1_67
 //       -> puf
+//     -> sm1_68
+//       -> puf
 
 module xbar_main_rot (
   input clk_i,
@@ -75,7 +77,9 @@ module xbar_main_rot (
   output tlul_pkg::tl_h2d_t tl_rs_decode_o,
   input  tlul_pkg::tl_d2h_t tl_rs_decode_i,
   output tlul_pkg::tl_h2d_t tl_puf_o,
-  input  tlul_pkg::tl_d2h_t tl_puf_i
+  input  tlul_pkg::tl_d2h_t tl_puf_i,
+  output tlul_pkg::tl_h2d_t tl_puf2_o,
+  input  tlul_pkg::tl_d2h_t tl_puf2_i
 );
 
   import tlul_pkg::*;
@@ -102,8 +106,8 @@ module xbar_main_rot (
   tl_d2h_t tl_s1n_32_us_d2h ;
 
 
-  tl_h2d_t tl_s1n_32_ds_h2d [13];
-  tl_d2h_t tl_s1n_32_ds_d2h [13];
+  tl_h2d_t tl_s1n_32_ds_h2d [14];
+  tl_d2h_t tl_s1n_32_ds_d2h [14];
 
   // Create steering signal
   logic [3:0] dev_sel_s1n_32;
@@ -195,6 +199,12 @@ module xbar_main_rot (
   tl_h2d_t tl_sm1_67_ds_h2d ;
   tl_d2h_t tl_sm1_67_ds_d2h ;
 
+  tl_h2d_t tl_sm1_68_us_h2d [1];
+  tl_d2h_t tl_sm1_68_us_d2h [1];
+
+  tl_h2d_t tl_sm1_68_ds_h2d ;
+  tl_d2h_t tl_sm1_68_ds_d2h ;
+
 
 
   // Create steering signal
@@ -240,6 +250,9 @@ module xbar_main_rot (
 
   assign tl_sm1_67_us_h2d[0] = tl_s1n_32_ds_h2d[0];
   assign tl_s1n_32_ds_d2h[0] = tl_sm1_67_us_d2h[0];
+
+  assign tl_sm1_68_us_h2d[0] = tl_s1n_32_ds_h2d[13];
+  assign tl_s1n_32_ds_d2h[13] = tl_sm1_68_us_d2h[0];
 
 
   assign tl_s1n_32_us_h2d = tl_host_i;
@@ -288,11 +301,14 @@ module xbar_main_rot (
   assign tl_puf_o = tl_sm1_67_ds_h2d;
   assign tl_sm1_67_ds_d2h = tl_puf_i;
 
+  assign tl_puf2_o = tl_sm1_68_ds_h2d;
+  assign tl_sm1_68_ds_d2h = tl_puf2_i;
+
   
 
   always_comb begin
     // default steering to generate error response if address is not within the range
-    dev_sel_s1n_32 = 4'd12;
+    dev_sel_s1n_32 = 4'd14;
     tl_s1n_32_us_h2d_mask = tl_s1n_32_us_h2d;
     // if ((tl_s1n_32_us_h2d.a_address &
     //      ~(ADDR_MASK_ROM_CTRL__ROM_ROT)) == ADDR_SPACE_ROM_CTRL__ROM_ROT) begin
@@ -361,6 +377,10 @@ module xbar_main_rot (
                   ~(ADDR_MASK_PUF)) == ADDR_SPACE_PUF) begin
       dev_sel_s1n_32 = 5'd0;
       tl_s1n_32_us_h2d_mask.a_address = tl_s1n_32_us_h2d.a_address & ADDR_MASK_PUF;
+    end else if ((tl_s1n_32_us_h2d.a_address &
+                  ~(ADDR_MASK_PUF2)) == ADDR_SPACE_PUF2) begin
+      dev_sel_s1n_32 = 5'd13;
+      tl_s1n_32_us_h2d_mask.a_address = tl_s1n_32_us_h2d.a_address & ADDR_MASK_PUF2;
     end
   end
 
@@ -568,13 +588,27 @@ module xbar_main_rot (
     .tl_d_o       (tl_sm1_67_ds_h2d),
     .tl_d_i       (tl_sm1_67_ds_d2h)
   );
+  tlul_socket_m1 #(
+    .HReqDepth (8'h0),
+    .HRspDepth (8'h0),
+    .DReqPass  (1'b0),
+    .DRspPass  (1'b0),
+    .M         (1)
+  ) u_sm1_68 (
+    .clk_i        (clk_i),
+    .rst_ni       (rst_ni),
+    .tl_h_i       (tl_sm1_68_us_h2d),
+    .tl_h_o       (tl_sm1_68_us_d2h),
+    .tl_d_o       (tl_sm1_68_ds_h2d),
+    .tl_d_i       (tl_sm1_68_ds_d2h)
+  );
 
   tlul_socket_1n #(
     .HReqDepth (4'h0),
     .HRspDepth (4'h0),
     .DReqDepth (56'h0),
     .DRspDepth (56'h0),
-    .N         (13)
+    .N         (14)
   ) u_s1n_32 (
     .clk_i        (clk_i),
     .rst_ni       (rst_ni),

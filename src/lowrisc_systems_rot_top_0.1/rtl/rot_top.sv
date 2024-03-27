@@ -154,6 +154,8 @@ module rot_top #(
   tlul_pkg::tl_d2h_t       rs_decode_tl_rsp;
   tlul_pkg::tl_h2d_t       puf_tl_req;
   tlul_pkg::tl_d2h_t       puf_tl_rsp;
+  tlul_pkg::tl_h2d_t       puf2_tl_req;
+  tlul_pkg::tl_d2h_t       puf2_tl_rsp;
 
 
   // Alert list
@@ -677,6 +679,22 @@ module rot_top #(
       .rst_ni (rst_ni)
   );
 
+  puf u_puf2 (
+
+      // Inter-module signals
+      .tl_i(puf2_tl_req),
+      .tl_o(puf2_tl_rsp),
+
+      .rng4bit                 (  ),
+      .rng4bit_done            (  ),
+      .rng_mode                (  ),
+      .es_rng_req              ( '0 ),
+
+      // Clock and reset connections
+      .clk_i (clk_i),
+      .rst_ni (rst_ni)
+  );
+
   xbar_main_rot u_xbar_main (
     .clk_i,
     .rst_ni,
@@ -739,7 +757,11 @@ module rot_top #(
 
     // port: tl_puf
     .tl_puf_o(puf_tl_req),
-    .tl_puf_i(puf_tl_rsp)
+    .tl_puf_i(puf_tl_rsp),
+
+    // port: tl_puf2
+    .tl_puf2_o(puf2_tl_req),
+    .tl_puf2_i(puf2_tl_rsp)
 
   );
     

@@ -69,7 +69,7 @@ wire cnt_done, cnt_done_a, cnt_done_b;  //counter ready to read data
         .I2(ca[NUM_LUTS-1])
       );
 
-    //   assign #2 ca[0] = ena[i] & rst & !ca[NUM_LUTS-1];
+    //   assign #2 ca[0] = !(ena[i] & rst & ca[NUM_LUTS-1]);
 
       genvar j;
       for (j=1; j < NUM_LUTS; j=j+1) begin: LUT_chain
@@ -100,7 +100,7 @@ genvar m;
         .I1(rst),
         .I2(cb[NUM_LUTS-1])
       );
-    //   assign #1 cb[0] = enb[m] & rst & !cb[NUM_LUTS-1];
+    //   assign #2 cb[0] = !(enb[m] & rst & cb[NUM_LUTS-1]);
 
       genvar n;
       for (n=1; n < NUM_LUTS; n=n+1) begin: LUT_chain

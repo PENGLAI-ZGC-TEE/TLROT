@@ -7,5 +7,6 @@ module LUT1 #(parameter INIT = 2'h0) (
         .I(I0),
         .ZN(O)
     );
+    // assign O=I0;
 
 endmodule
