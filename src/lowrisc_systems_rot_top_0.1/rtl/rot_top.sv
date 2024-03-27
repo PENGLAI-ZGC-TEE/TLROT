@@ -55,10 +55,10 @@ module rot_top #(
     output logic intr_entropy_src_es_fatal_err_o,
     output logic intr_edn0_edn_cmd_req_done_o,
     output logic intr_edn0_edn_fatal_err_o,
-    output logic intr_otbn_done,
+    // output logic intr_otbn_done,
 
     // key output
-    output keymgr_pkg::hw_key_req_t       keymgr_aes_key,
+    // output keymgr_pkg::hw_key_req_t       keymgr_aes_key,
     // output keymgr_pkg::hw_key_req_t       keymgr_kmac_key,
     // output keymgr_pkg::otbn_key_req_t       keymgr_otbn_key,
     input [255:0] key0,
@@ -79,7 +79,7 @@ module rot_top #(
     output rom_ctrl_pkg::pwrmgr_data_t       rom_ctrl_pwrmgr_data,
     // input prim_rom_pkg::rom_cfg_t       ast_rom_cfg,
     input tlul_pkg::tl_h2d_t64 rom_ctrl_rom_tl_req,
-    output tlul_pkg::tl_d2h_t64 rom_ctrl_rom_tl_rsp,
+    output tlul_pkg::tl_d2h_t64 rom_ctrl_rom_tl_rsp
 
     // kmac
     // output kmac_pkg::app_rsp_t kmac_app_rsp_lc,
@@ -99,8 +99,8 @@ module rot_top #(
     //edn0
     // output edn_pkg::edn_req_t edn0_edn_req_rot,
     // input edn_pkg::edn_rsp_t edn0_edn_rsp_rot,
-    input edn_pkg::edn_req_t [7:0] edn0_edn_req,
-    output edn_pkg::edn_rsp_t [7:0] edn0_edn_rsp,
+    // input edn_pkg::edn_req_t [7:0] edn0_edn_req,
+    // output edn_pkg::edn_rsp_t [7:0] edn0_edn_rsp,
     // input tlul_pkg::tl_h2d_t       edn0_tl_req,
     // output tlul_pkg::tl_d2h_t       edn0_tl_rsp,
 
@@ -112,8 +112,8 @@ module rot_top #(
     // output lc_ctrl_pkg::lc_tx_t       otbn_lc_rma_ack,
 
     // alerts NAlerts = 14
-    input  prim_alert_pkg::alert_rx_t [14-1:0] alert_rx_i,
-    output prim_alert_pkg::alert_tx_t [14-1:0] alert_tx_o
+    // input  prim_alert_pkg::alert_rx_t [14-1:0] alert_rx_i,
+    // output prim_alert_pkg::alert_tx_t [14-1:0] alert_tx_o
 );
 
   import tlul_pkg::*;
@@ -157,10 +157,10 @@ module rot_top #(
 
 
   // Alert list
-  // localparam NAlerts = 12;
-  // prim_alert_pkg::alert_tx_t [NAlerts-1:0]  alert_tx;
+  localparam NAlerts = 14;
+  prim_alert_pkg::alert_tx_t [NAlerts-1:0]  alert_tx_o;
   // prim_alert_pkg::alert_rx_t [NAlerts-1:0]  alert_rx;
-  // localparam prim_alert_pkg::alert_rx_t [NAlerts-1:0] alert_rx = {NAlerts{prim_alert_pkg::ALERT_RX_DEFAULT}};
+  localparam prim_alert_pkg::alert_rx_t [NAlerts-1:0] alert_rx_i = {NAlerts{prim_alert_pkg::ALERT_RX_DEFAULT}};
 
   
   // Interrupt source list
@@ -183,6 +183,7 @@ module rot_top #(
   // logic intr_entropy_src_es_fatal_err;
   // logic intr_edn0_edn_cmd_req_done;
   // logic intr_edn0_edn_fatal_err;
+  logic intr_otbn_done;
 
   // define inter-module signal
   prim_mubi_pkg::mubi4_t [2:0] clkmgr_aon_idle;
@@ -202,7 +203,9 @@ module rot_top #(
   assign otp_ctrl_otp_keymgr_key.key_share0 = key0;
   assign otp_ctrl_otp_keymgr_key.valid = key_valid;
   localparam otp_ctrl_pkg::otp_device_id_t keymgr_otp_device_id = 256'h48ecf6c738f0f108a5b08620695ffd4d48ecf6c738f0f108a5b08620695ffd4d;
-  // keymgr_pkg::hw_key_req_t       keymgr_aes_key;
+  keymgr_pkg::hw_key_req_t       keymgr_aes_key;
+  logic unused_keymgr_aes_key;
+  assign unused_keymgr_aes_key = ^ keymgr_aes_key;
   keymgr_pkg::hw_key_req_t       keymgr_kmac_key;
   keymgr_pkg::otbn_key_req_t       keymgr_otbn_key;
   kmac_pkg::app_req_t [2:0] kmac_app_req;
@@ -231,6 +234,7 @@ module rot_top #(
 
   //csrng
   csrng_pkg::csrng_req_t [1:0]  csrng_csrng_cmd_req;
+  assign csrng_csrng_cmd_req[1] = '0;
   csrng_pkg::csrng_rsp_t [1:0] csrng_csrng_cmd_rsp;
   // prim_mubi_pkg::mubi8_t       csrng_otp_en_csrng_sw_app_read;
   localparam  MuBi8False = 8'h69;
@@ -298,19 +302,19 @@ module rot_top #(
   // assign csrng_csrng_cmd_req[1] = rot_top_csrng_csrng_cmd_req;
   // assign rot_top_csrng_csrng_cmd_rsp = csrng_csrng_cmd_rsp[1];
 
-  assign edn0_edn_req_intr[1] = edn0_edn_req[1];
-  assign edn0_edn_req_intr[2] = edn0_edn_req[2];
-  assign edn0_edn_req_intr[4] = edn0_edn_req[4];
+  assign edn0_edn_req_intr[1] = '0;
+  assign edn0_edn_req_intr[2] = '0;
+  assign edn0_edn_req_intr[4] = '0;
   // assign edn0_edn_req_intr[5] = edn0_edn_req[5];
   // assign edn0_edn_req_intr[6] = edn0_edn_req[6];
-  assign edn0_edn_req_intr[7] = edn0_edn_req[7];
+  assign edn0_edn_req_intr[7] = '0;
 
-  assign edn0_edn_rsp[1] = edn0_edn_rsp_intr[1];
-  assign edn0_edn_rsp[2] = edn0_edn_rsp_intr[2];
-  assign edn0_edn_rsp[4] = edn0_edn_rsp_intr[4];
-  // assign edn0_edn_rsp[5] = edn0_edn_rsp_intr[5];
-  // assign edn0_edn_rsp[6] = edn0_edn_rsp_intr[6];
-  assign edn0_edn_rsp[7] = edn0_edn_rsp_intr[7];
+  // assign edn0_edn_rsp[1] = edn0_edn_rsp_intr[1];
+  // assign edn0_edn_rsp[2] = edn0_edn_rsp_intr[2];
+  // assign edn0_edn_rsp[4] = edn0_edn_rsp_intr[4];
+  // // assign edn0_edn_rsp[5] = edn0_edn_rsp_intr[5];
+  // // assign edn0_edn_rsp[6] = edn0_edn_rsp_intr[6];
+  // assign edn0_edn_rsp[7] = edn0_edn_rsp_intr[7];
 
   hmac #(
     .AlertAsyncOn(1'b1)
