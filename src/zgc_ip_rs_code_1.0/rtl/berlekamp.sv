@@ -153,8 +153,8 @@ module rsdec_berl (lambda_out, omega_out, syndrome0, syndrome1, syndrome2, syndr
 			for (j = 0; j < 31; j = j + 1) B[j] <= 0;
 			for (j = 0; j < 32; j = j + 1) omega[j] <= 0;
 			for (j = 0; j < 31; j = j + 1) A[j] <= 0;
-			L = 0;
-			D = 0;
+			L <= 0;
+			D <= 0;
 		end
 		else if (~enable)
 		begin
@@ -165,8 +165,8 @@ module rsdec_berl (lambda_out, omega_out, syndrome0, syndrome1, syndrome2, syndr
 			omega[0] <= 1;
 			for (j = 1; j < 32; j = j +1) omega[j] <= 0;
 			for (j = 0; j < 31; j = j + 1) A[j] <= 0;
-			L = 0;
-			D = 0;
+			L <= 0;
+			D <= 0;
 		end
 		else
 		begin
@@ -215,12 +215,12 @@ module rsdec_berl (lambda_out, omega_out, syndrome0, syndrome1, syndrome2, syndr
 			end
 
 		// if (delta) L = i - L + 1;
-			if ((phase0 & delta) && (count != -1)) L = count - L + 1;
+			if ((phase0 & delta) && (count != -1)) L <= count - L + 1;
 
 		//for (D = j = 0; j < t; j = j + 1)
 		//	D += lambda[j] * syndrome[t-j-1];
 			if (phase0)
-				D = tmp0 ^ tmp1 ^ tmp2 ^ tmp3 ^ tmp4 ^ tmp5 ^ tmp6 ^ tmp7 ^ tmp8 ^ tmp9 ^ tmp10 ^ tmp11 ^ tmp12 ^ tmp13 ^ tmp14 ^ tmp15 ^ tmp16 ^ tmp17 ^ tmp18 ^ tmp19 ^ tmp20 ^ tmp21 ^ tmp22 ^ tmp23 ^ tmp24 ^ tmp25 ^ tmp26 ^ tmp27 ^ tmp28 ^ tmp29 ^ tmp30 ^ tmp31;
+				D <= tmp0 ^ tmp1 ^ tmp2 ^ tmp3 ^ tmp4 ^ tmp5 ^ tmp6 ^ tmp7 ^ tmp8 ^ tmp9 ^ tmp10 ^ tmp11 ^ tmp12 ^ tmp13 ^ tmp14 ^ tmp15 ^ tmp16 ^ tmp17 ^ tmp18 ^ tmp19 ^ tmp20 ^ tmp21 ^ tmp22 ^ tmp23 ^ tmp24 ^ tmp25 ^ tmp26 ^ tmp27 ^ tmp28 ^ tmp29 ^ tmp30 ^ tmp31;
 
 		end
 	end
