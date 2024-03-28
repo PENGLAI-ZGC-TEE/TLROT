@@ -961,8 +961,8 @@ module otbn_alu_bignum
   // Raise a register integrity violation error iff `mod_intg_q` is used and (at least partially)
   // invalid.
   // zdr ecc disable
-  logic mod_intg_err_zdr = (|mod_intg_err) & 1'b0;
-  assign reg_intg_violation_err_o = mod_used & |(mod_intg_err_zdr);
+  // logic mod_intg_err_zdr = (|mod_intg_err) & 1'b0;
+  assign reg_intg_violation_err_o = mod_used & |((|mod_intg_err) & 1'b0);
   `ASSERT_KNOWN(RegIntgErrKnown_A, reg_intg_violation_err_o)
 
   // Blanking Assertions

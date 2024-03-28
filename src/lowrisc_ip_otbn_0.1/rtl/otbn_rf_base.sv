@@ -218,10 +218,10 @@ module otbn_rf_base
   // Suppress integrity error where the relevant read port saw a call stack pop error (so both
   // integrity and data are invalid).
   // zdr ecc disable
-  logic rd_data_a_err_zdr = (|rd_data_a_err) & 1'b0;
-  logic rd_data_b_err_zdr = (|rd_data_b_err) & 1'b0;
-  assign intg_err_o = (|rd_data_a_err_zdr & rd_en_a_i & ~pop_stack_a_err) |
-                      (|rd_data_b_err_zdr & rd_en_b_i & ~pop_stack_b_err);
+  // logic rd_data_a_err_zdr = (|rd_data_a_err) & 1'b0;
+  // logic rd_data_b_err_zdr = (|rd_data_b_err) & 1'b0;
+  assign intg_err_o = (|((|rd_data_a_err) & 1'b0) & rd_en_a_i & ~pop_stack_a_err) |
+                      (|((|rd_data_b_err) & 1'b0) & rd_en_b_i & ~pop_stack_b_err);
 
   // Make sure we're not outputting X. This indicates that something went wrong during the initial
   // secure wipe.

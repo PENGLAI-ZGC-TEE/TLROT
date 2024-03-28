@@ -291,10 +291,10 @@ module tlul_adapter_sram64
   logic [DataIntgWidth-1:0] error_instr_integ = '0;
   logic [DataIntgWidth-1:0]  error_data_integ = '0;
 
-  logic [DataIntgWidth-1:0] error_blanking_integ;
-  assign error_blanking_integ = (prim_mubi_pkg::mubi4_test_true_strict(reqfifo_rdata.instr_type)) ?
-                                 error_instr_integ :
-                                 error_data_integ;
+  logic [DataIntgWidth-1:0] error_blanking_integ = '0;
+  // assign error_blanking_integ = (prim_mubi_pkg::mubi4_test_true_strict(reqfifo_rdata.instr_type)) ?
+  //                                error_instr_integ :
+  //                                error_data_integ;
 
   logic [top_pkg::TL_DW64-1:0] d_data;
   assign d_data = (vld_rd_rsp & ~d_error) ? rspfifo_rdata.data   // valid read
@@ -303,7 +303,7 @@ module tlul_adapter_sram64
   // If this a write response with data fields set to 0, we have to set all ECC bits correctly
   // since we are using an inverted Hsiao code.
   logic [DataIntgWidth-1:0] data_intg;
-  assign data_intg = (vld_rd_rsp && reqfifo_rdata.error) ? error_blanking_integ    : // TL-UL error
+  assign data_intg = (vld_rd_rsp && reqfifo_rdata.error) ? '0    : // TL-UL error
                      (vld_rd_rsp)                        ? rspfifo_rdata.data_intg : // valid read
                      prim_secded_pkg::SecdedInv3932ZeroEcc;                          // valid write
 

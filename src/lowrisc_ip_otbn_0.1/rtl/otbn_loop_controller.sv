@@ -277,10 +277,10 @@ module otbn_loop_controller
     .err_o      (current_loop_intg_err)
   );
   //zdr ecc disable
-  logic current_loop_intg_err_zdr = (|current_loop_intg_err) & 1'b0;
+  // logic current_loop_intg_err_zdr = (|current_loop_intg_err) & 1'b0;
   assign hw_err_o = (|loop_counter_err_d) |
                     loop_stack_cnt_err    |
-                    ((|current_loop_intg_err_zdr) & current_loop_valid);
+                    (((|current_loop_intg_err) & 1'b0) & current_loop_valid);
 
   assign predec_err_o =
     (loop_end_addr_predec_i != new_loop_end_addr_full[ImemAddrWidth-1:0]) & loop_start_req_i;
