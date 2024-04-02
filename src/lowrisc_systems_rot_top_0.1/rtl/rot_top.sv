@@ -32,6 +32,7 @@ module rot_top #(
     input rst_shadowed_ni,
     input clk_edn_i,
     input rst_edn_ni,
+    input scan_mode,
 
     // Bus Interface
     input  tlul_pkg::tl_h2d_t tl_i,
@@ -648,6 +649,7 @@ module rot_top #(
       // Inter-module signals
       .tl_i(rs_encode_tl_req),
       .tl_o(rs_encode_tl_rsp),
+      .scan_mode(scan_mode),
 
       // Clock and reset connections
       .clk_i (clk_i),
@@ -658,6 +660,7 @@ module rot_top #(
       // Inter-module signals
       .tl_i(rs_decode_tl_req),
       .tl_o(rs_decode_tl_rsp),
+      .scan_mode(scan_mode),
 
       // Clock and reset connections
       .clk_i (clk_i),

@@ -5,6 +5,7 @@ module rs_encode
 (
   input  logic                                      clk_i,
   input  logic                                      rst_ni,
+  input  logic                                      scan_mode,
   // Bus interface
   input  tlul_pkg::tl_h2d_t                         tl_i,
   output tlul_pkg::tl_d2h_t                         tl_o
@@ -38,6 +39,7 @@ rs_encode_wrapper  u_rs_encode_wrapper (
     .clk                     ( clk_i                         ),
     .rst_n                   ( rst_ni                        ),
     .clrn                    ( reg2hw.ctrl_signals.clrn.q ),
+    .scan_mode                (scan_mode),
     .encode_en               ( reg2hw.ctrl_signals.encode_en.q ),
     .datain                  ( {reg2hw.data_in[41].q,reg2hw.data_in[40].q,reg2hw.data_in[39].q,reg2hw.data_in[38].q,reg2hw.data_in[37].q,reg2hw.data_in[36].q,reg2hw.data_in[35].q,reg2hw.data_in[34].q,reg2hw.data_in[33].q,reg2hw.data_in[32].q,reg2hw.data_in[31].q,reg2hw.data_in[30].q,reg2hw.data_in[29].q,reg2hw.data_in[28].q,reg2hw.data_in[27].q,reg2hw.data_in[26].q,reg2hw.data_in[25].q,reg2hw.data_in[24].q,reg2hw.data_in[23].q,reg2hw.data_in[22].q,reg2hw.data_in[21].q,reg2hw.data_in[20].q,reg2hw.data_in[19].q,reg2hw.data_in[18].q,reg2hw.data_in[17].q,reg2hw.data_in[16].q,reg2hw.data_in[15].q,reg2hw.data_in[14].q,reg2hw.data_in[13].q,reg2hw.data_in[12].q,reg2hw.data_in[11].q,reg2hw.data_in[10].q,reg2hw.data_in[9].q,reg2hw.data_in[8].q,reg2hw.data_in[7].q,reg2hw.data_in[6].q,reg2hw.data_in[5].q,reg2hw.data_in[4].q,reg2hw.data_in[3].q,reg2hw.data_in[2].q,reg2hw.data_in[1].q,reg2hw.data_in[0].q}),
 

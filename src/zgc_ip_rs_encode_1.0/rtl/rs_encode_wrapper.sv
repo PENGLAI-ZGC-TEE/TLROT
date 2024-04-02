@@ -3,6 +3,7 @@ module rs_encode_wrapper(
     input rst_n,
     input clrn,
     input encode_en,               // 开始编码的外部信号
+    input scan_mode,
     input [8*168-1:0] datain,
     output reg [8*200-1:0] encoded_data,
     output reg valid,              // 编码完成的信号
@@ -32,7 +33,7 @@ module rs_encode_wrapper(
         .enable(enc_ena),
         .data(data_present),
         .clk(clk),
-        .clrn(rst_n & clrn)
+        .clrn(rst_n & (clrn | scan_mode))
     );
 
     // State machine for control logic

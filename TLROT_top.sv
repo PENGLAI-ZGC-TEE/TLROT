@@ -7,6 +7,7 @@ module TLROT_top (
     input clk_i,
     input rst_ni,
     output logic ROMInitEn,
+    input scan_mode,
     
     output         a_ready,
     input          a_valid,
@@ -159,6 +160,7 @@ rot_top u_rot_top (
     .rst_shadowed_ni(~rst_ni),
     .clk_edn_i(clk_i),
     .rst_edn_ni(~rst_ni),
+    .scan_mode(scan_mode),
 
     .tl_i(tl_i),
     .tl_o(tl_o),
@@ -203,7 +205,7 @@ rng #(
   .rst_ast_rng_ni (  ~rst_ni ),
   .rng_en_i ( es_rng_req_o.rng_enable ),
   .rng_fips_i ( es_rng_fips_o ),
-  .scan_mode_i ( 1'b0 ),
+  .scan_mode_i ( scan_mode ),
   .rng_b_o ( es_rng_rsp_i.rng_b  ),
   .rng_val_o ( es_rng_rsp_i.rng_valid )
 );
