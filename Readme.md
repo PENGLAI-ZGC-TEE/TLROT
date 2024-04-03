@@ -14,20 +14,20 @@
 ## 可信根DC综合说明
 1. 综合时需define SYNTHESIS
 2. 由于PUF中RO需要连接计数器，进行计数，即计数器的时钟为RO的输出，应当禁止DC对相关路径进行时序分析优化，因此在DC脚本中加入(根据实际module名字修改)：
-- create_clock -name puf_a_clk [get_pins XSTop/misc/periCx/tlrot/tlrot/u_rot_top/u_puf/u_PUF_core/puf_128/puf_inst/mux_out_a]
-- create_clock -name puf_b_clk [get_pins XSTop/misc/periCx/tlrot/tlrot/u_rot_top/u_puf/u_PUF_core/puf_128/puf_inst/mux_out_b]
+- create_clock -name puf_a_clk [get_pins XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf/u_PUF_core/puf_128/puf_inst/mux_out_a]
+- create_clock -name puf_b_clk [get_pins XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf/u_PUF_core/puf_128/puf_inst/mux_out_b]
 - set_false_path -from [get_clock puf_a_clk ] -to [get_clock io_clock]
 - set_false_path -from [get_clock puf_b_clk ] -to [get_clock io_clock]
-- create_clock -name puf2_a_clk [get_pins XSTop/misc/periCx/tlrot/tlrot/u_rot_top/u_puf2/u_PUF_core/puf_128/puf_inst/mux_out_a]
-- create_clock -name puf2_b_clk [get_pins XSTop/misc/periCx/tlrot/tlrot/u_rot_top/u_puf2/u_PUF_core/puf_128/puf_inst/mux_out_b]
+- create_clock -name puf2_a_clk [get_pins XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf2/u_PUF_core/puf_128/puf_inst/mux_out_a]
+- create_clock -name puf2_b_clk [get_pins XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf2/u_PUF_core/puf_128/puf_inst/mux_out_b]
 - set_false_path -from [get_clock puf2_a_clk ] -to [get_clock io_clock]
 - set_false_path -from [get_clock puf2_b_clk ] -to [get_clock io_clock]
 3. RO因为构成了环，会被DC优化掉，因此需要禁止DC优化这几个器件，在脚本中加入(根据实际module名字修改)：
-- set_dont_touch [get cells XSTop/misc/periCx/tlrot/tlrot/u_rot_top/u_puf/u_PUF_core/puf_128/puf_inst/puf_a*]
-- set_dont_touch [get cells XSTop/misc/periCx/tlrot/tlrot/u_rot_top/u_puf/u_PUF_core/puf_128/puf_inst/puf_b*]
-- set_dont_touch [get cells XSTop/misc/periCx/tlrot/tlrot/u_rot_top/u_puf2/u_PUF_core/puf_128/puf_inst/puf_a*]
-- set_dont_touch [get cells XSTop/misc/periCx/tlrot/tlrot/u_rot_top/u_puf2/u_PUF_core/puf_128/puf_inst/puf_b*]
+- set_dont_touch [get cells XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf/u_PUF_core/puf_128/puf_inst/puf_a*]
+- set_dont_touch [get cells XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf/u_PUF_core/puf_128/puf_inst/puf_b*]
+- set_dont_touch [get cells XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf2/u_PUF_core/puf_128/puf_inst/puf_a*]
+- set_dont_touch [get cells XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf2/u_PUF_core/puf_128/puf_inst/puf_b*]
 
 ## 可信根后端说明
-可信根中有RO PUF，需要保证其布局布线一致，位于：XSTop/misc/periCx/tlrot/tlrot/u_rot_top/u_puf/u_PUF_core/puf_128/puf_inst/puf_* 和 
+可信根中有RO PUF，需要保证其布局布线一致，位于：XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf/u_PUF_core/puf_128/puf_inst/puf_* 和 
 XSTop/misc/periCx/tlrot/tlrot/u_rot_top/u_puf2/u_PUF_core/puf_128/puf_inst/puf_*
