@@ -30,4 +30,4 @@
 
 ## 可信根后端说明
 可信根中有RO PUF，需要保证其布局布线一致，位于：XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf/u_PUF_core/puf_128/puf_inst/puf_* 和 
-XSTop/misc/periCx/tlrot/tlrot/u_rot_top/u_puf2/u_PUF_core/puf_128/puf_inst/puf_*
+XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf2/u_PUF_core/puf_128/puf_inst/puf_*
