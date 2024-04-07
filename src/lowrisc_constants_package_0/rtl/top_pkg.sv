@@ -3,6 +3,12 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
+`ifndef VERILATOR
+  `ifndef VCS
+    `define SYNTHESIS
+  `endif
+`endif
+
 package top_pkg;
 
 localparam int TL_AW=32;
