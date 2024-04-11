@@ -19,7 +19,7 @@ logic [Width-1:0]     mem [1024];
     if (req_i) begin
       if (write_i) begin
         for (int i=0; i < MaskWidth; i = i + 1) begin
-          if (!wmask_i) begin
+          if (wmask_i) begin
             mem[addr_i][i*DataBitsPerMask +: DataBitsPerMask] <=
               wdata_i[i*DataBitsPerMask +: DataBitsPerMask];
           end
