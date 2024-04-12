@@ -29,7 +29,7 @@ module PUF1bit(
     output [1:0] response
 );
 
-`ifdef SYNTHESIS
+`ifdef SYNTHESIS_ZDR
 // `define TEST
 // `ifdef TEST
 parameter NUM_LUTS = 5;
