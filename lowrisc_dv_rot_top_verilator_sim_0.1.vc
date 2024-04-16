@@ -426,6 +426,8 @@
 ../src/main/resources/TLROT/src/zgc_ip_puf_1.0/rtl/AP0BP1.sv
 ../src/main/resources/TLROT/src/zgc_ip_puf_1.0/rtl/Comp.sv
 ../src/main/resources/TLROT/src/zgc_ip_puf_1.0/rtl/Counter.sv
+../src/main/resources/TLROT/src/zgc_ip_puf_1.0/rtl/Single_RO.sv
+../src/main/resources/TLROT/src/zgc_ip_puf_1.0/rtl/RO_Array128.sv
 ../src/main/resources/TLROT/src/zgc_ip_puf_1.0/rtl/PUF128.sv
 ../src/main/resources/TLROT/src/zgc_ip_puf_1.0/rtl/PUF1bit.sv
 ../src/main/resources/TLROT/src/zgc_ip_puf_1.0/rtl/PUF_core.sv
