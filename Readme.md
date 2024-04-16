@@ -23,11 +23,17 @@
 - set_false_path -from [get_clock puf2_a_clk ] -to [get_clock io_clock]
 - set_false_path -from [get_clock puf2_b_clk ] -to [get_clock io_clock]
 3. RO因为构成了环，会被DC优化掉，因此需要禁止DC优化这几个器件，在脚本中加入(根据实际module名字修改)：
-- set_dont_touch [get cells XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf/u_PUF_core/puf_128/puf_inst/puf_a*]
-- set_dont_touch [get cells XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf/u_PUF_core/puf_128/puf_inst/puf_b*]
-- set_dont_touch [get cells XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf2/u_PUF_core/puf_128/puf_inst/puf_a*]
-- set_dont_touch [get cells XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf2/u_PUF_core/puf_128/puf_inst/puf_b*]
+- set_dont_touch [get cells XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf/u_PUF_core/puf_128/puf_inst/puf_a/puf_array*]
+- set_dont_touch [get cells XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf/u_PUF_core/puf_128/puf_inst/puf_b/puf_array*]
+- set_dont_touch [get cells XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf2/u_PUF_core/puf_128/puf_inst/puf_a/puf_array*]
+- set_dont_touch [get cells XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf2/u_PUF_core/puf_128/puf_inst/puf_b/puf_array*]
+4. RO的module名分别为：
+- RO_Array128 （包含了128个RO）
+- Single_RO （单个RO）
 
 ## 可信根后端说明
-可信根中有RO PUF，需要保证其布局布线一致，位于：XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf/u_PUF_core/puf_128/puf_inst/puf_* 和 
-XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf2/u_PUF_core/puf_128/puf_inst/puf_*
+可信根中有RO PUF，需要保证其布局布线一致，具体如下（每组包含128个RO）：
+- XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf/u_PUF_core/puf_128/puf_inst/puf_a/puf_array*
+- XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf/u_PUF_core/puf_128/puf_inst/puf_b/puf_array*
+- XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf2/u_PUF_core/puf_128/puf_inst/puf_a/puf_array*
+- XSTop/misc/periCx/rot/tlrot/u_rot_top/u_puf2/u_PUF_core/puf_128/puf_inst/puf_b/puf_array*

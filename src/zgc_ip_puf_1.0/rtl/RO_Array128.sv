@@ -10,9 +10,9 @@ genvar i;
   generate
     for (i=0; i < NUM_OSCILLATORS; i=i+1) begin: puf_array
       Single_RO u_ro (
-        en(en[i]),
-        rst(rst),
-        ro_out(ro_out[i])
+        .en(en[i]),
+        .rst(rst),
+        .ro_out(ro_out[i])
       );
     end
   endgenerate
