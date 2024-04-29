@@ -27,7 +27,7 @@ module Timer(
     output reg ctrl
 );
 
-parameter [5:0] target = 5'd15;
+parameter [5:0] target = 6'd50;
 reg [31:0] count;
 
 //reg sig_delay;

@@ -3,7 +3,7 @@ module Single_RO (
     input rst,
     output ro_out
 );
-    parameter NUM_LUTS = 5;
+    parameter NUM_LUTS = 15;
     wire [NUM_LUTS-1:0] ca;
 
     BUFFD0BWP40P140HVT LUT_en (
