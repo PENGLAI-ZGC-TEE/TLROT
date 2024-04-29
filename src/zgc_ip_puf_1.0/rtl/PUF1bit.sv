@@ -166,7 +166,7 @@ PUFMux128 MuxB(
     .o_Q(mux_out_b)
 );
 
-Timer #(.target(5'd15)) u_timer(
+Timer #(.target(6'd50)) u_timer(
     .rst(rst),
     .clk(clk),
     .enable(timer_enable),
