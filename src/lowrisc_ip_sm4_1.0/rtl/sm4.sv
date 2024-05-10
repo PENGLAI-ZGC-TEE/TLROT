@@ -64,6 +64,7 @@ sm4_top  u_sm4_top (
     .result_out              ( {hw2reg.result_out[3].d,hw2reg.result_out[2].d,hw2reg.result_out[1].d,hw2reg.result_out[0].d} ),
     .valid_out               ( hw2reg.state_signals.valid_out.d),
     .key_exp_ready_out       ( hw2reg.state_signals.key_exp_ready_out.d),
+    .key_exp_ready_out_de    ( hw2reg.state_signals.key_exp_ready_out.de),
     .ready_out_de            ( {hw2reg.result_out[3].de,hw2reg.result_out[2].de,hw2reg.result_out[1].de,hw2reg.result_out[0].de }),
     .valid_out_de            (hw2reg.state_signals.valid_out.de)
 );
