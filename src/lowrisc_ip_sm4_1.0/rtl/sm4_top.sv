@@ -30,6 +30,7 @@ module sm4_top(
     user_key_valid_in   ,
     user_key_in         ,
     key_exp_ready_out   ,
+    key_exp_ready_out_de ,
     result_out          ,
     valid_out           ,
     ready_out_de        ,
@@ -52,6 +53,7 @@ module sm4_top(
     
     output           valid_out          ;
     output           key_exp_ready_out  ;
+    output           key_exp_ready_out_de;
     wire             ready_out          ;
     wire    [31 : 0] rk_00              ;
     wire    [31 : 0] rk_01              ;
@@ -139,6 +141,7 @@ module sm4_top(
     
     assign ready_out_de = {4{ready_out}};
     assign valid_out_de=valid_out;
+    assign key_exp_ready_out_de = key_exp_ready_out;
 
     key_expansion u_key
 	(
