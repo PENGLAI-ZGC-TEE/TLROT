@@ -28,11 +28,17 @@ module sm3
 );
 
 assign hw2reg.message_in.de = 1'd0;
+assign hw2reg.message_in.d = '0;
 assign hw2reg.ctrl_signals.msg_inpt_vld_byte_3.de = 1'd0;
 assign hw2reg.ctrl_signals.msg_inpt_vld_byte_2.de = 1'd0;
 assign hw2reg.ctrl_signals.msg_inpt_vld_byte_1.de = 1'd0;
 assign hw2reg.ctrl_signals.msg_inpt_vld_byte_0.de = 1'd0;
 assign hw2reg.ctrl_signals.msg_inpt_lst.de = 1'd0;
+assign hw2reg.ctrl_signals.msg_inpt_vld_byte_3.d = 1'd0;
+assign hw2reg.ctrl_signals.msg_inpt_vld_byte_2.d = 1'd0;
+assign hw2reg.ctrl_signals.msg_inpt_vld_byte_1.d = 1'd0;
+assign hw2reg.ctrl_signals.msg_inpt_vld_byte_0.d = 1'd0;
+assign hw2reg.ctrl_signals.msg_inpt_lst.d = 1'd0;
 
 
 sm3_core_top  u_sm3_core_top (
