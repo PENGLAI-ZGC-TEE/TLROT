@@ -29,9 +29,12 @@ module rs_decode
 
 assign hw2reg.ctrl_signals.decode_en.de = 1'd0;
 assign hw2reg.ctrl_signals.clrn.de = 1'd0;
+assign hw2reg.ctrl_signals.decode_en.d = 1'd0;
+assign hw2reg.ctrl_signals.clrn.d = 1'd0;
 always_comb begin
   for (int i = 0; i < 50; i++) begin
     hw2reg.encoded_data_in[i].de = 1'd0;
+    hw2reg.encoded_data_in[i].d = '0;
   end
 end
 

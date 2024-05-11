@@ -35,10 +35,17 @@ puf_reg_top  u_puf_reg_top (
 assign hw2reg.ctrl_signals.mode_puf.de = 1'd0;
 assign hw2reg.ctrl_signals.enable_puf.de = 1'd0;
 assign hw2reg.ctrl_signals.ready_cha.de = 1'd0;
+assign hw2reg.ctrl_signals.mode_puf.d = 1'd0;
+assign hw2reg.ctrl_signals.enable_puf.d = 1'd0;
+assign hw2reg.ctrl_signals.ready_cha.d = 1'd0;
 assign hw2reg.challenge[0].de = 1'd0;
 assign hw2reg.challenge[1].de = 1'd0;
 assign hw2reg.challenge[2].de = 1'd0;
 assign hw2reg.challenge[3].de = 1'd0;
+assign hw2reg.challenge[0].d = '0;
+assign hw2reg.challenge[1].d = '0;
+assign hw2reg.challenge[2].d = '0;
+assign hw2reg.challenge[3].d = '0;
 
 
 PUF_core  u_PUF_core (
