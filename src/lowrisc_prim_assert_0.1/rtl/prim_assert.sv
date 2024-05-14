@@ -116,17 +116,17 @@
 //////////////////////////////
 
 // Assert that signal is an active-high pulse with pulse length of 1 clock cycle
-`define ASSERT_PULSE(__name, __sig, __clk = `ASSERT_DEFAULT_CLK, __rst = `ASSERT_DEFAULT_RST) \
+`define ASSERT_PULSE(__name, __sig, __clk=`ASSERT_DEFAULT_CLK, __rst=`ASSERT_DEFAULT_RST) \
   `ASSERT(__name, $rose(__sig) |=> !(__sig), __clk, __rst)
 
 // Assert that a property is true only when an enable signal is set.  It can be called as a module
 // (or interface) body item.
-`define ASSERT_IF(__name, __prop, __enable, __clk = `ASSERT_DEFAULT_CLK, __rst = `ASSERT_DEFAULT_RST) \
+`define ASSERT_IF(__name, __prop, __enable, __clk=`ASSERT_DEFAULT_CLK, __rst=`ASSERT_DEFAULT_RST) \
   `ASSERT(__name, (__enable) |-> (__prop), __clk, __rst)
 
 // Assert that signal has a known value (each bit is either '0' or '1') after reset if enable is
 // set.  It can be called as a module (or interface) body item.
-`define ASSERT_KNOWN_IF(__name, __sig, __enable, __clk = `ASSERT_DEFAULT_CLK, __rst = `ASSERT_DEFAULT_RST) \
+`define ASSERT_KNOWN_IF(__name, __sig, __enable, __clk=`ASSERT_DEFAULT_CLK, __rst=`ASSERT_DEFAULT_RST) \
   `ASSERT_KNOWN(__name``KnownEnable, __enable, __clk, __rst)                                               \
   `ASSERT_IF(__name, !$isunknown(__sig), __enable, __clk, __rst)
 
@@ -139,7 +139,7 @@
 
 // ASSUME_FPV
 // Assume a concurrent property during formal verification only.
-`define ASSUME_FPV(__name, __prop, __clk = `ASSERT_DEFAULT_CLK, __rst = `ASSERT_DEFAULT_RST) \
+`define ASSUME_FPV(__name, __prop, __clk=`ASSERT_DEFAULT_CLK, __rst=`ASSERT_DEFAULT_RST) \
 `ifdef FPV_ON                                                                                \
    `ASSUME(__name, __prop, __clk, __rst)                                                     \
 `endif
@@ -153,7 +153,7 @@
 
 // COVER_FPV
 // Cover a concurrent property during formal verification
-`define COVER_FPV(__name, __prop, __clk = `ASSERT_DEFAULT_CLK, __rst = `ASSERT_DEFAULT_RST) \
+`define COVER_FPV(__name, __prop, __clk=`ASSERT_DEFAULT_CLK, __rst=`ASSERT_DEFAULT_RST) \
 `ifdef FPV_ON                                                                               \
    `COVER(__name, __prop, __clk, __rst)                                                     \
 `endif
@@ -164,7 +164,7 @@
 // It is possible for the reset to release ahead of the clock.
 // Create a small "gray" window beyond the usual rst time to avoid
 // checking.
-`define ASSERT_FPV_LINEAR_FSM(__name, __state, __type, __clk = `ASSERT_DEFAULT_CLK, __rst = `ASSERT_DEFAULT_RST) \
+`define ASSERT_FPV_LINEAR_FSM(__name, __state, __type, __clk=`ASSERT_DEFAULT_CLK, __rst=`ASSERT_DEFAULT_RST) \
   `ifdef INC_ASSERT                                                                                              \
      bit __name``_cond;                                                                                          \
      always_ff @(posedge __clk or posedge __rst) begin                                                           \

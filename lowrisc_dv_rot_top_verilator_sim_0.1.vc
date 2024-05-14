@@ -67,7 +67,6 @@
 ../src/main/resources/TLROT/src/lowrisc_constants_otp_ctrl_reg_0/rtl/otp_ctrl_reg_pkg.sv
 ../src/main/resources/TLROT/src/lowrisc_constants_package_0/rtl/top_pkg.sv
 ../src/main/resources/TLROT/src/lowrisc_constants_rot_top_pkg_0/rtl/tl_main_rot_pkg.sv
-../src/main/resources/TLROT/src/lowrisc_dv_dv_macros_0/dv_macros.svh
 ../src/main/resources/TLROT/src/lowrisc_dv_pins_if_0/pins_if.sv
 ../src/main/resources/TLROT/src/lowrisc_ip_entropy_src_ack_sm_pkg_0.1/entropy_src_ack_sm_pkg.sv
 ../src/main/resources/TLROT/src/lowrisc_ip_entropy_src_main_sm_pkg_0.1/entropy_src_main_sm_pkg.sv
