@@ -21,7 +21,7 @@
 // to make the code more concise.
 
 // Register with asynchronous reset.
-`define PRIM_FLOP_A(__d, __q, __resval = `PRIM_FLOP_RESVAL, __clk = `PRIM_FLOP_CLK, __rst_n = `PRIM_FLOP_RST) \
+`define PRIM_FLOP_A(__d, __q, __resval=`PRIM_FLOP_RESVAL, __clk=`PRIM_FLOP_CLK, __rst_n=`PRIM_FLOP_RST) \
   always_ff @(posedge __clk or negedge __rst_n) begin \
     if (!__rst_n) begin                               \
       __q <= __resval;                                \
@@ -41,7 +41,7 @@
 // Note that in this variant, the __q output is disconnected from prim_sparse_fsm_flop and attached
 // to the behavioral flop. An assertion is added to ensure equivalence between the
 // prim_sparse_fsm_flop output and the behavioral flop output in that case.
-`define PRIM_FLOP_SPARSE_FSM(__name, __d, __q, __type, __resval = `PRIM_FLOP_RESVAL, __clk = `PRIM_FLOP_CLK, __rst_n = `PRIM_FLOP_RST, __alert_trigger_sva_en = 1) \
+`define PRIM_FLOP_SPARSE_FSM(__name, __d, __q, __type, __resval=`PRIM_FLOP_RESVAL, __clk=`PRIM_FLOP_CLK, __rst_n=`PRIM_FLOP_RST, __alert_trigger_sva_en=1) \
   `ifdef SIMULATION                                   \
     prim_sparse_fsm_flop #(                           \
       .StateEnumT(__type),                            \
