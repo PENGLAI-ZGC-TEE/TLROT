@@ -55,6 +55,7 @@ rsdec x2 (
 // State machine transition and output logic
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
+        received <= 8'b0;
         state <= IDLE;
         bit_count <= 0;
         error_pos <= 0;
@@ -63,6 +64,7 @@ always @(posedge clk or negedge rst_n) begin
         dec_ena <= 0;
         ready <= 1;
     end else if (!clrn) begin
+        received <= 8'b0;
         state <= IDLE;
         bit_count <= 0;
         error_pos <= 0;

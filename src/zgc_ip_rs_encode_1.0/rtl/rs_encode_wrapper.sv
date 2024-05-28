@@ -43,6 +43,7 @@ module rs_encode_wrapper(
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             // Reset logic
+            message <= 8'b0;
             state <= S_IDLE;
             i <= 0;
             j <= 0;
@@ -221,6 +222,7 @@ module rs_encode_wrapper(
             data_buffer[167] <= 0;
         end else if (!clrn) begin
             // Reset logic
+            message <= 8'b0;
             state <= S_IDLE;
             i <= 0;
             j <= 0;
