@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -16,10 +16,7 @@ module entropy_src_reg_top (
   input  entropy_src_reg_pkg::entropy_src_hw2reg_t hw2reg, // Read
 
   // Integrity check errors
-  output logic intg_err_o,
-
-  // Config
-  input devmode_i // If 1, explicit error return for unmapped register access
+  output logic intg_err_o
 );
 
   import entropy_src_reg_pkg::* ;
@@ -119,7 +116,7 @@ module entropy_src_reg_top (
   // cdc oversampling signals
 
   assign reg_rdata = reg_rdata_next ;
-  assign reg_error = (devmode_i & addrmiss) | wr_err | intg_err;
+  assign reg_error = addrmiss | wr_err | intg_err;
 
   // Define SW related signals
   // Format: <reg>_<field>_{wd|we|qs}
@@ -166,14 +163,18 @@ module entropy_src_reg_top (
   logic conf_we;
   logic [3:0] conf_fips_enable_qs;
   logic [3:0] conf_fips_enable_wd;
-  logic [3:0] conf_entropy_data_reg_enable_qs;
-  logic [3:0] conf_entropy_data_reg_enable_wd;
-  logic [3:0] conf_threshold_scope_qs;
-  logic [3:0] conf_threshold_scope_wd;
+  logic [3:0] conf_fips_flag_qs;
+  logic [3:0] conf_fips_flag_wd;
+  logic [3:0] conf_rng_fips_qs;
+  logic [3:0] conf_rng_fips_wd;
   logic [3:0] conf_rng_bit_enable_qs;
   logic [3:0] conf_rng_bit_enable_wd;
   logic [1:0] conf_rng_bit_sel_qs;
   logic [1:0] conf_rng_bit_sel_wd;
+  logic [3:0] conf_threshold_scope_qs;
+  logic [3:0] conf_threshold_scope_wd;
+  logic [3:0] conf_entropy_data_reg_enable_qs;
+  logic [3:0] conf_entropy_data_reg_enable_wd;
   logic entropy_control_we;
   logic [3:0] entropy_control_es_route_qs;
   logic [3:0] entropy_control_es_route_wd;
@@ -313,20 +314,18 @@ module entropy_src_reg_top (
   logic [3:0] fw_ov_sha3_start_wd;
   logic fw_ov_wr_fifo_full_re;
   logic fw_ov_wr_fifo_full_qs;
-  logic fw_ov_rd_fifo_overflow_we;
   logic fw_ov_rd_fifo_overflow_qs;
-  logic fw_ov_rd_fifo_overflow_wd;
   logic fw_ov_rd_data_re;
   logic [31:0] fw_ov_rd_data_qs;
   logic fw_ov_wr_data_we;
   logic [31:0] fw_ov_wr_data_wd;
   logic observe_fifo_thresh_we;
-  logic [6:0] observe_fifo_thresh_qs;
-  logic [6:0] observe_fifo_thresh_wd;
+  logic [5:0] observe_fifo_thresh_qs;
+  logic [5:0] observe_fifo_thresh_wd;
   logic observe_fifo_depth_re;
-  logic [6:0] observe_fifo_depth_qs;
+  logic [5:0] observe_fifo_depth_qs;
   logic debug_status_re;
-  logic [2:0] debug_status_entropy_fifo_depth_qs;
+  logic [1:0] debug_status_entropy_fifo_depth_qs;
   logic [2:0] debug_status_sha3_fsm_qs;
   logic debug_status_sha3_block_pr_qs;
   logic debug_status_sha3_squeezing_qs;
@@ -365,7 +364,14 @@ module entropy_src_reg_top (
   logic recov_alert_sts_es_fw_ov_wr_alert_wd;
   logic recov_alert_sts_es_fw_ov_disable_alert_qs;
   logic recov_alert_sts_es_fw_ov_disable_alert_wd;
+  logic recov_alert_sts_fips_flag_field_alert_qs;
+  logic recov_alert_sts_fips_flag_field_alert_wd;
+  logic recov_alert_sts_rng_fips_field_alert_qs;
+  logic recov_alert_sts_rng_fips_field_alert_wd;
+  logic recov_alert_sts_postht_entropy_drop_alert_qs;
+  logic recov_alert_sts_postht_entropy_drop_alert_wd;
   logic err_code_sfifo_esrng_err_qs;
+  logic err_code_sfifo_distr_err_qs;
   logic err_code_sfifo_observe_err_qs;
   logic err_code_sfifo_esfinal_err_qs;
   logic err_code_es_ack_sm_err_qs;
@@ -387,7 +393,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW1C),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_intr_state_es_entropy_valid (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -413,7 +420,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW1C),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_intr_state_es_health_test_failed (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -439,7 +447,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW1C),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_intr_state_es_observe_fifo_ready (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -465,7 +474,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW1C),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_intr_state_es_fatal_err (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -493,7 +503,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_intr_enable_es_entropy_valid (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -519,7 +530,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_intr_enable_es_health_test_failed (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -545,7 +557,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_intr_enable_es_observe_fifo_ready (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -571,7 +584,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_intr_enable_es_fatal_err (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -704,7 +718,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW0C),
-    .RESVAL  (1'h1)
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
   ) u_me_regwen (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -731,7 +746,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW0C),
-    .RESVAL  (1'h1)
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
   ) u_sw_regupd (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -758,7 +774,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (1'h1)
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
   ) u_regwen (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -802,7 +819,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (4),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (4'h9)
+    .RESVAL  (4'h9),
+    .Mubi    (1'b1)
   ) u_module_enable (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -833,7 +851,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (4),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (4'h9)
+    .RESVAL  (4'h9),
+    .Mubi    (1'b1)
   ) u_conf_fips_enable (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -855,18 +874,19 @@ module entropy_src_reg_top (
     .qs     (conf_fips_enable_qs)
   );
 
-  //   F[entropy_data_reg_enable]: 7:4
+  //   F[fips_flag]: 7:4
   prim_subreg #(
     .DW      (4),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (4'h9)
-  ) u_conf_entropy_data_reg_enable (
+    .RESVAL  (4'h9),
+    .Mubi    (1'b1)
+  ) u_conf_fips_flag (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
 
     // from register interface
     .we     (conf_gated_we),
-    .wd     (conf_entropy_data_reg_enable_wd),
+    .wd     (conf_fips_flag_wd),
 
     // from internal hardware
     .de     (1'b0),
@@ -874,25 +894,26 @@ module entropy_src_reg_top (
 
     // to internal hardware
     .qe     (),
-    .q      (reg2hw.conf.entropy_data_reg_enable.q),
+    .q      (reg2hw.conf.fips_flag.q),
     .ds     (),
 
     // to register interface (read)
-    .qs     (conf_entropy_data_reg_enable_qs)
+    .qs     (conf_fips_flag_qs)
   );
 
-  //   F[threshold_scope]: 15:12
+  //   F[rng_fips]: 11:8
   prim_subreg #(
     .DW      (4),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (4'h9)
-  ) u_conf_threshold_scope (
+    .RESVAL  (4'h9),
+    .Mubi    (1'b1)
+  ) u_conf_rng_fips (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
 
     // from register interface
     .we     (conf_gated_we),
-    .wd     (conf_threshold_scope_wd),
+    .wd     (conf_rng_fips_wd),
 
     // from internal hardware
     .de     (1'b0),
@@ -900,18 +921,19 @@ module entropy_src_reg_top (
 
     // to internal hardware
     .qe     (),
-    .q      (reg2hw.conf.threshold_scope.q),
+    .q      (reg2hw.conf.rng_fips.q),
     .ds     (),
 
     // to register interface (read)
-    .qs     (conf_threshold_scope_qs)
+    .qs     (conf_rng_fips_qs)
   );
 
-  //   F[rng_bit_enable]: 23:20
+  //   F[rng_bit_enable]: 15:12
   prim_subreg #(
     .DW      (4),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (4'h9)
+    .RESVAL  (4'h9),
+    .Mubi    (1'b1)
   ) u_conf_rng_bit_enable (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -933,11 +955,12 @@ module entropy_src_reg_top (
     .qs     (conf_rng_bit_enable_qs)
   );
 
-  //   F[rng_bit_sel]: 25:24
+  //   F[rng_bit_sel]: 17:16
   prim_subreg #(
     .DW      (2),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (2'h0)
+    .RESVAL  (2'h0),
+    .Mubi    (1'b0)
   ) u_conf_rng_bit_sel (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -959,6 +982,60 @@ module entropy_src_reg_top (
     .qs     (conf_rng_bit_sel_qs)
   );
 
+  //   F[threshold_scope]: 21:18
+  prim_subreg #(
+    .DW      (4),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (4'h9),
+    .Mubi    (1'b1)
+  ) u_conf_threshold_scope (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (conf_gated_we),
+    .wd     (conf_threshold_scope_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.conf.threshold_scope.q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (conf_threshold_scope_qs)
+  );
+
+  //   F[entropy_data_reg_enable]: 25:22
+  prim_subreg #(
+    .DW      (4),
+    .SwAccess(prim_subreg_pkg::SwAccessRW),
+    .RESVAL  (4'h9),
+    .Mubi    (1'b1)
+  ) u_conf_entropy_data_reg_enable (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (conf_gated_we),
+    .wd     (conf_entropy_data_reg_enable_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (),
+    .q      (reg2hw.conf.entropy_data_reg_enable.q),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (conf_entropy_data_reg_enable_qs)
+  );
+
 
   // R[entropy_control]: V(False)
   // Create REGWEN-gated WE signal
@@ -968,7 +1045,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (4),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (4'h9)
+    .RESVAL  (4'h9),
+    .Mubi    (1'b1)
   ) u_entropy_control_es_route (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -994,7 +1072,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (4),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (4'h9)
+    .RESVAL  (4'h9),
+    .Mubi    (1'b1)
   ) u_entropy_control_es_type (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1041,7 +1120,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (16),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (16'h200)
+    .RESVAL  (16'h200),
+    .Mubi    (1'b0)
   ) u_health_test_windows_fips_window (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1067,7 +1147,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (16),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (16'h60)
+    .RESVAL  (16'h60),
+    .Mubi    (1'b0)
   ) u_health_test_windows_bypass_window (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1890,7 +1971,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (16),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (16'h2)
+    .RESVAL  (16'h2),
+    .Mubi    (1'b0)
   ) u_alert_threshold_alert_threshold (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1916,7 +1998,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (16),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (16'hfffd)
+    .RESVAL  (16'hfffd),
+    .Mubi    (1'b0)
   ) u_alert_threshold_alert_threshold_inv (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2102,7 +2185,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (4),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (4'h9)
+    .RESVAL  (4'h9),
+    .Mubi    (1'b1)
   ) u_fw_ov_control_fw_ov_mode (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2128,7 +2212,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (4),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (4'h9)
+    .RESVAL  (4'h9),
+    .Mubi    (1'b1)
   ) u_fw_ov_control_fw_ov_entropy_insert (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2155,7 +2240,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (4),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (4'h9)
+    .RESVAL  (4'h9),
+    .Mubi    (1'b1)
   ) u_fw_ov_sha3_start (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2197,15 +2283,16 @@ module entropy_src_reg_top (
   // R[fw_ov_rd_fifo_overflow]: V(False)
   prim_subreg #(
     .DW      (1),
-    .SwAccess(prim_subreg_pkg::SwAccessW0C),
-    .RESVAL  (1'h0)
+    .SwAccess(prim_subreg_pkg::SwAccessRO),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_fw_ov_rd_fifo_overflow (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
 
     // from register interface
-    .we     (fw_ov_rd_fifo_overflow_we),
-    .wd     (fw_ov_rd_fifo_overflow_wd),
+    .we     (1'b0),
+    .wd     ('0),
 
     // from internal hardware
     .de     (hw2reg.fw_ov_rd_fifo_overflow.de),
@@ -2262,9 +2349,10 @@ module entropy_src_reg_top (
   logic observe_fifo_thresh_gated_we;
   assign observe_fifo_thresh_gated_we = observe_fifo_thresh_we & regwen_qs;
   prim_subreg #(
-    .DW      (7),
+    .DW      (6),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (7'h20)
+    .RESVAL  (6'h10),
+    .Mubi    (1'b0)
   ) u_observe_fifo_thresh (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2289,7 +2377,7 @@ module entropy_src_reg_top (
 
   // R[observe_fifo_depth]: V(True)
   prim_subreg_ext #(
-    .DW    (7)
+    .DW    (6)
   ) u_observe_fifo_depth (
     .re     (observe_fifo_depth_re),
     .we     (1'b0),
@@ -2304,9 +2392,9 @@ module entropy_src_reg_top (
 
 
   // R[debug_status]: V(True)
-  //   F[entropy_fifo_depth]: 2:0
+  //   F[entropy_fifo_depth]: 1:0
   prim_subreg_ext #(
-    .DW    (3)
+    .DW    (2)
   ) u_debug_status_entropy_fifo_depth (
     .re     (debug_status_re),
     .we     (1'b0),
@@ -2430,7 +2518,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW0C),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_recov_alert_sts_fips_enable_field_alert (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2456,7 +2545,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW0C),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_recov_alert_sts_entropy_data_reg_en_field_alert (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2482,7 +2572,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW0C),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_recov_alert_sts_module_enable_field_alert (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2508,7 +2599,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW0C),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_recov_alert_sts_threshold_scope_field_alert (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2534,7 +2626,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW0C),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_recov_alert_sts_rng_bit_enable_field_alert (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2560,7 +2653,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW0C),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_recov_alert_sts_fw_ov_sha3_start_field_alert (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2586,7 +2680,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW0C),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_recov_alert_sts_fw_ov_mode_field_alert (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2612,7 +2707,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW0C),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_recov_alert_sts_fw_ov_entropy_insert_field_alert (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2638,7 +2734,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW0C),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_recov_alert_sts_es_route_field_alert (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2664,7 +2761,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW0C),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_recov_alert_sts_es_type_field_alert (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2690,7 +2788,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW0C),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_recov_alert_sts_es_main_sm_alert (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2716,7 +2815,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW0C),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_recov_alert_sts_es_bus_cmp_alert (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2742,7 +2842,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW0C),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_recov_alert_sts_es_thresh_cfg_alert (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2768,7 +2869,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW0C),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_recov_alert_sts_es_fw_ov_wr_alert (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2794,7 +2896,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessW0C),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_recov_alert_sts_es_fw_ov_disable_alert (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2816,13 +2919,95 @@ module entropy_src_reg_top (
     .qs     (recov_alert_sts_es_fw_ov_disable_alert_qs)
   );
 
+  //   F[fips_flag_field_alert]: 17:17
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_recov_alert_sts_fips_flag_field_alert (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (recov_alert_sts_we),
+    .wd     (recov_alert_sts_fips_flag_field_alert_wd),
+
+    // from internal hardware
+    .de     (hw2reg.recov_alert_sts.fips_flag_field_alert.de),
+    .d      (hw2reg.recov_alert_sts.fips_flag_field_alert.d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (recov_alert_sts_fips_flag_field_alert_qs)
+  );
+
+  //   F[rng_fips_field_alert]: 18:18
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_recov_alert_sts_rng_fips_field_alert (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (recov_alert_sts_we),
+    .wd     (recov_alert_sts_rng_fips_field_alert_wd),
+
+    // from internal hardware
+    .de     (hw2reg.recov_alert_sts.rng_fips_field_alert.de),
+    .d      (hw2reg.recov_alert_sts.rng_fips_field_alert.d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (recov_alert_sts_rng_fips_field_alert_qs)
+  );
+
+  //   F[postht_entropy_drop_alert]: 31:31
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_recov_alert_sts_postht_entropy_drop_alert (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (recov_alert_sts_we),
+    .wd     (recov_alert_sts_postht_entropy_drop_alert_wd),
+
+    // from internal hardware
+    .de     (hw2reg.recov_alert_sts.postht_entropy_drop_alert.de),
+    .d      (hw2reg.recov_alert_sts.postht_entropy_drop_alert.d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (recov_alert_sts_postht_entropy_drop_alert_qs)
+  );
+
 
   // R[err_code]: V(False)
   //   F[sfifo_esrng_err]: 0:0
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_err_code_sfifo_esrng_err (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2844,11 +3029,39 @@ module entropy_src_reg_top (
     .qs     (err_code_sfifo_esrng_err_qs)
   );
 
-  //   F[sfifo_observe_err]: 1:1
+  //   F[sfifo_distr_err]: 1:1
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
+  ) u_err_code_sfifo_distr_err (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+
+    // from register interface
+    .we     (1'b0),
+    .wd     ('0),
+
+    // from internal hardware
+    .de     (hw2reg.err_code.sfifo_distr_err.de),
+    .d      (hw2reg.err_code.sfifo_distr_err.d),
+
+    // to internal hardware
+    .qe     (),
+    .q      (),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (err_code_sfifo_distr_err_qs)
+  );
+
+  //   F[sfifo_observe_err]: 2:2
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessRO),
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_err_code_sfifo_observe_err (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2870,11 +3083,12 @@ module entropy_src_reg_top (
     .qs     (err_code_sfifo_observe_err_qs)
   );
 
-  //   F[sfifo_esfinal_err]: 2:2
+  //   F[sfifo_esfinal_err]: 3:3
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_err_code_sfifo_esfinal_err (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2900,7 +3114,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_err_code_es_ack_sm_err (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2926,7 +3141,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_err_code_es_main_sm_err (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2952,7 +3168,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_err_code_es_cntr_err (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2978,7 +3195,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_err_code_sha3_state_err (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3004,7 +3222,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_err_code_sha3_rst_storage_err (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3030,7 +3249,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_err_code_fifo_write_err (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3056,7 +3276,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_err_code_fifo_read_err (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3082,7 +3303,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_err_code_fifo_state_err (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3120,7 +3342,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (5),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (5'h0)
+    .RESVAL  (5'h0),
+    .Mubi    (1'b0)
   ) u_err_code_test (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3148,7 +3371,8 @@ module entropy_src_reg_top (
   prim_subreg #(
     .DW      (9),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (9'hf5)
+    .RESVAL  (9'hf5),
+    .Mubi    (1'b0)
   ) u_main_sm_state (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3344,13 +3568,17 @@ module entropy_src_reg_top (
 
   assign conf_fips_enable_wd = reg_wdata[3:0];
 
-  assign conf_entropy_data_reg_enable_wd = reg_wdata[7:4];
+  assign conf_fips_flag_wd = reg_wdata[7:4];
 
-  assign conf_threshold_scope_wd = reg_wdata[15:12];
+  assign conf_rng_fips_wd = reg_wdata[11:8];
 
-  assign conf_rng_bit_enable_wd = reg_wdata[23:20];
+  assign conf_rng_bit_enable_wd = reg_wdata[15:12];
 
-  assign conf_rng_bit_sel_wd = reg_wdata[25:24];
+  assign conf_rng_bit_sel_wd = reg_wdata[17:16];
+
+  assign conf_threshold_scope_wd = reg_wdata[21:18];
+
+  assign conf_entropy_data_reg_enable_wd = reg_wdata[25:22];
   assign entropy_control_we = addr_hit[10] & reg_we & !reg_error;
 
   assign entropy_control_es_route_wd = reg_wdata[3:0];
@@ -3451,16 +3679,13 @@ module entropy_src_reg_top (
 
   assign fw_ov_sha3_start_wd = reg_wdata[3:0];
   assign fw_ov_wr_fifo_full_re = addr_hit[46] & reg_re & !reg_error;
-  assign fw_ov_rd_fifo_overflow_we = addr_hit[47] & reg_we & !reg_error;
-
-  assign fw_ov_rd_fifo_overflow_wd = reg_wdata[0];
   assign fw_ov_rd_data_re = addr_hit[48] & reg_re & !reg_error;
   assign fw_ov_wr_data_we = addr_hit[49] & reg_we & !reg_error;
 
   assign fw_ov_wr_data_wd = reg_wdata[31:0];
   assign observe_fifo_thresh_we = addr_hit[50] & reg_we & !reg_error;
 
-  assign observe_fifo_thresh_wd = reg_wdata[6:0];
+  assign observe_fifo_thresh_wd = reg_wdata[5:0];
   assign observe_fifo_depth_re = addr_hit[51] & reg_re & !reg_error;
   assign debug_status_re = addr_hit[52] & reg_re & !reg_error;
   assign recov_alert_sts_we = addr_hit[53] & reg_we & !reg_error;
@@ -3494,6 +3719,12 @@ module entropy_src_reg_top (
   assign recov_alert_sts_es_fw_ov_wr_alert_wd = reg_wdata[15];
 
   assign recov_alert_sts_es_fw_ov_disable_alert_wd = reg_wdata[16];
+
+  assign recov_alert_sts_fips_flag_field_alert_wd = reg_wdata[17];
+
+  assign recov_alert_sts_rng_fips_field_alert_wd = reg_wdata[18];
+
+  assign recov_alert_sts_postht_entropy_drop_alert_wd = reg_wdata[31];
   assign err_code_test_we = addr_hit[55] & reg_we & !reg_error;
 
   assign err_code_test_wd = reg_wdata[4:0];
@@ -3548,7 +3779,7 @@ module entropy_src_reg_top (
     reg_we_check[44] = fw_ov_control_gated_we;
     reg_we_check[45] = fw_ov_sha3_start_we;
     reg_we_check[46] = 1'b0;
-    reg_we_check[47] = fw_ov_rd_fifo_overflow_we;
+    reg_we_check[47] = 1'b0;
     reg_we_check[48] = 1'b0;
     reg_we_check[49] = fw_ov_wr_data_we;
     reg_we_check[50] = observe_fifo_thresh_gated_we;
@@ -3614,10 +3845,12 @@ module entropy_src_reg_top (
 
       addr_hit[9]: begin
         reg_rdata_next[3:0] = conf_fips_enable_qs;
-        reg_rdata_next[7:4] = conf_entropy_data_reg_enable_qs;
-        reg_rdata_next[15:12] = conf_threshold_scope_qs;
-        reg_rdata_next[23:20] = conf_rng_bit_enable_qs;
-        reg_rdata_next[25:24] = conf_rng_bit_sel_qs;
+        reg_rdata_next[7:4] = conf_fips_flag_qs;
+        reg_rdata_next[11:8] = conf_rng_fips_qs;
+        reg_rdata_next[15:12] = conf_rng_bit_enable_qs;
+        reg_rdata_next[17:16] = conf_rng_bit_sel_qs;
+        reg_rdata_next[21:18] = conf_threshold_scope_qs;
+        reg_rdata_next[25:22] = conf_entropy_data_reg_enable_qs;
       end
 
       addr_hit[10]: begin
@@ -3810,15 +4043,15 @@ module entropy_src_reg_top (
       end
 
       addr_hit[50]: begin
-        reg_rdata_next[6:0] = observe_fifo_thresh_qs;
+        reg_rdata_next[5:0] = observe_fifo_thresh_qs;
       end
 
       addr_hit[51]: begin
-        reg_rdata_next[6:0] = observe_fifo_depth_qs;
+        reg_rdata_next[5:0] = observe_fifo_depth_qs;
       end
 
       addr_hit[52]: begin
-        reg_rdata_next[2:0] = debug_status_entropy_fifo_depth_qs;
+        reg_rdata_next[1:0] = debug_status_entropy_fifo_depth_qs;
         reg_rdata_next[5:3] = debug_status_sha3_fsm_qs;
         reg_rdata_next[6] = debug_status_sha3_block_pr_qs;
         reg_rdata_next[7] = debug_status_sha3_squeezing_qs;
@@ -3844,12 +4077,16 @@ module entropy_src_reg_top (
         reg_rdata_next[14] = recov_alert_sts_es_thresh_cfg_alert_qs;
         reg_rdata_next[15] = recov_alert_sts_es_fw_ov_wr_alert_qs;
         reg_rdata_next[16] = recov_alert_sts_es_fw_ov_disable_alert_qs;
+        reg_rdata_next[17] = recov_alert_sts_fips_flag_field_alert_qs;
+        reg_rdata_next[18] = recov_alert_sts_rng_fips_field_alert_qs;
+        reg_rdata_next[31] = recov_alert_sts_postht_entropy_drop_alert_qs;
       end
 
       addr_hit[54]: begin
         reg_rdata_next[0] = err_code_sfifo_esrng_err_qs;
-        reg_rdata_next[1] = err_code_sfifo_observe_err_qs;
-        reg_rdata_next[2] = err_code_sfifo_esfinal_err_qs;
+        reg_rdata_next[1] = err_code_sfifo_distr_err_qs;
+        reg_rdata_next[2] = err_code_sfifo_observe_err_qs;
+        reg_rdata_next[3] = err_code_sfifo_esfinal_err_qs;
         reg_rdata_next[20] = err_code_es_ack_sm_err_qs;
         reg_rdata_next[21] = err_code_es_main_sm_err_qs;
         reg_rdata_next[22] = err_code_es_cntr_err_qs;

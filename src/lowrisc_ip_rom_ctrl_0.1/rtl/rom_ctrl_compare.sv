@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -24,8 +24,8 @@ module rom_ctrl_compare
   output mubi4_t                     good_o,
 
   // CSR inputs for DIGEST and EXP_DIGEST. Ordered with word 0 as LSB.
-  input logic [NumWords*64-1:0]      digest_i,
-  input logic [NumWords*64-1:0]      exp_digest_i,
+  input logic [NumWords*32-1:0]      digest_i,
+  input logic [NumWords*32-1:0]      exp_digest_i,
 
   // To alert system
   output logic                       alert_o
@@ -137,8 +137,9 @@ module rom_ctrl_compare
     .incr_en_i(addr_incr),
     .decr_en_i(1'b0),
     .step_i(AW'(1)),
+    .commit_i(1'b1),
     .cnt_o(addr_q),
-    .cnt_next_o(),
+    .cnt_after_commit_o(),
     .err_o(addr_ctr_alert)
   );
 

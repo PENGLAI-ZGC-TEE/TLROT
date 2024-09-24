@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -37,10 +37,10 @@
 // on a non-default value. This may be required for pre-silicon/FPGA evaluation but we don't want
 // to allow this for tapeout.
 `define ASSERT_STATIC_LINT_ERROR(__name, __prop)     \
-  localparam int __name = (__prop) ? 1 : 2;          \
+  localparam int __name=(__prop) ? 1 : 2;          \
   always_comb begin                                  \
     logic unused_assert_static_lint_error;           \
-    unused_assert_static_lint_error = __name'(1'b1); \
+    unused_assert_static_lint_error=__name'(1'b1); \
   end
 
 // Static assertions for checks inside SV packages. If the conditions is not true, this will
@@ -48,7 +48,7 @@
 `define ASSERT_STATIC_IN_PACKAGE(__name, __prop)              \
   function automatic bit assert_static_in_package_``__name(); \
     bit unused_bit [((__prop) ? 1 : -1)];                     \
-    unused_bit = '{default: 1'b0};                            \
+    unused_bit='{default: 1'b0};                            \
     return unused_bit[0];                                     \
   endfunction
 
@@ -176,7 +176,7 @@
      end                                                                                                         \
      property __name``_p;                                                                                        \
        __type initial_state;                                                                                     \
-       (!$stable(__state) & __name``_cond, initial_state = $past(__state)) |->                                   \
+       (!$stable(__state) & __name``_cond, initial_state=$past(__state)) |->                                   \
            (__state != initial_state) until (__rst == 1'b1);                                                     \
      endproperty                                                                                                 \
    `ASSERT(__name, __name``_p, __clk, __rst)                                                                     \

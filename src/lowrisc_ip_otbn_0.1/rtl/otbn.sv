@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -234,6 +234,8 @@ module otbn
   logic imem_req;
   logic imem_gnt;
   logic imem_write;
+  logic imem_wr_collision;
+  logic imem_wpending;
   logic [ImemIndexWidth-1:0] imem_index;
   logic [38:0] imem_wdata;
   logic [38:0] imem_wmask;
@@ -332,8 +334,7 @@ module otbn
     .Width          (39),
     .Depth          (ImemSizeWords),
     .DataBitsPerMask(39),
-    .EnableParity   (0),
-    .DiffWidth      (39)
+    .EnableParity   (0)
   ) u_imem (
     .clk_i,
     .rst_ni(rst_n),
@@ -354,7 +355,12 @@ module otbn
     .rvalid_o(imem_rvalid),
     .raddr_o (),
     .rerror_o(),
-    .cfg_i   (ram_cfg_i)
+    .cfg_i   (ram_cfg_i),
+
+    .wr_collision_o   (imem_wr_collision),
+    .write_pending_o  (imem_wpending),
+
+    .alert_o ()
   );
 
   // We should never see a request that doesn't get granted. A fatal error is raised if this occurs.
@@ -375,21 +381,26 @@ module otbn
     .SecFifoPtr      (1)  // SEC_CM: TLUL_FIFO.CTR.REDUN
   ) u_tlul_adapter_sram_imem (
     .clk_i,
-    .rst_ni      (rst_n),
-    .tl_i        (tl_win_h2d[TlWinImem]),
-    .tl_o        (tl_win_d2h[TlWinImem]),
-    .en_ifetch_i (MuBi4False),
-    .req_o       (imem_req_bus),
-    .req_type_o  (),
-    .gnt_i       (imem_gnt_bus),
-    .we_o        (imem_write_bus),
-    .addr_o      (imem_index_bus),
-    .wdata_o     (imem_wdata_bus),
-    .wmask_o     (imem_wmask_bus),
-    .intg_error_o(imem_bus_intg_violation),
-    .rdata_i     (imem_rdata_bus),
-    .rvalid_i    (imem_rvalid_bus),
-    .rerror_i    (imem_rerror_bus)
+    .rst_ni                     (rst_n),
+    .tl_i                       (tl_win_h2d[TlWinImem]),
+    .tl_o                       (tl_win_d2h[TlWinImem]),
+    .en_ifetch_i                (MuBi4False),
+    .req_o                      (imem_req_bus),
+    .req_type_o                 (),
+    .gnt_i                      (imem_gnt_bus),
+    .we_o                       (imem_write_bus),
+    .addr_o                     (imem_index_bus),
+    .wdata_o                    (imem_wdata_bus),
+    .wmask_o                    (imem_wmask_bus),
+    .intg_error_o               (imem_bus_intg_violation),
+    .rdata_i                    (imem_rdata_bus),
+    .rvalid_i                   (imem_rvalid_bus),
+    .rerror_i                   (imem_rerror_bus),
+    .compound_txn_in_progress_o (),
+    .readback_en_i              (prim_mubi_pkg::MuBi4False),
+    .readback_error_o           (),
+    .wr_collision_i             (imem_wr_collision),
+    .write_pending_i            (imem_wpending)
   );
 
 
@@ -519,6 +530,8 @@ module otbn
   logic [31:0] dmem_wdata_narrow_bus;
   logic [top_pkg::TL_DBW-1:0] dmem_byte_mask_bus;
   logic dmem_rvalid_bus;
+  logic dmem_wr_collision;
+  logic dmem_wpending;
   logic [1:0] dmem_rerror_bus;
 
   logic dmem_bus_intg_violation;
@@ -529,15 +542,12 @@ module otbn
   logic unused_dmem_addr_core_wordbits;
   assign unused_dmem_addr_core_wordbits = ^dmem_addr_core[DmemAddrWidth-DmemIndexWidth-1:0];
 
-  logic mubi_err;
-
   // SEC_CM: MEM.SCRAMBLE
   prim_ram_1p_scr #(
     .Width             (ExtWLEN),
     .Depth             (DmemSizeWords),
     .DataBitsPerMask   (39),
     .EnableParity      (0),
-    .DiffWidth         (39),
     .ReplicateKeyStream(1)
   ) u_dmem (
     .clk_i,
@@ -559,7 +569,12 @@ module otbn
     .rvalid_o(dmem_rvalid),
     .raddr_o (),
     .rerror_o(),
-    .cfg_i   (ram_cfg_i)
+    .cfg_i   (ram_cfg_i),
+
+    .wr_collision_o   (dmem_wr_collision),
+    .write_pending_o  (dmem_wpending),
+
+    .alert_o ()
   );
 
   // We should never see a request that doesn't get granted. A fatal error is raised if this occurs.
@@ -599,9 +614,7 @@ module otbn
   // dmem_rerror_vec is 2 bits wide and is used to report ECC errors. Bit 1 is set if there's an
   // uncorrectable error and bit 0 is set if there's a correctable error. However, we're treating
   // all errors as fatal, so OR the two signals together.
-  //zdr: dmem ecc disable
-  assign dmem_rerror = (|dmem_rerror_vec)  & 1'b0;
-  // assign dmem_rerror = |dmem_rerror_vec;
+  assign dmem_rerror = |dmem_rerror_vec;
 
   // DMEM access from main TL-UL bus
   logic dmem_gnt_bus;
@@ -618,21 +631,26 @@ module otbn
     .SecFifoPtr      (1)  // SEC_CM: TLUL_FIFO.CTR.REDUN
   ) u_tlul_adapter_sram_dmem (
     .clk_i,
-    .rst_ni      (rst_n),
-    .tl_i        (tl_win_h2d[TlWinDmem]),
-    .tl_o        (tl_win_d2h[TlWinDmem]),
-    .en_ifetch_i (MuBi4False),
-    .req_o       (dmem_req_bus),
-    .req_type_o  (),
-    .gnt_i       (dmem_gnt_bus),
-    .we_o        (dmem_write_bus),
-    .addr_o      (dmem_index_bus),
-    .wdata_o     (dmem_wdata_bus),
-    .wmask_o     (dmem_wmask_bus),
-    .intg_error_o(dmem_bus_intg_violation),
-    .rdata_i     (dmem_rdata_bus),
-    .rvalid_i    (dmem_rvalid_bus),
-    .rerror_i    (dmem_rerror_bus)
+    .rst_ni                     (rst_n),
+    .tl_i                       (tl_win_h2d[TlWinDmem]),
+    .tl_o                       (tl_win_d2h[TlWinDmem]),
+    .en_ifetch_i                (MuBi4False),
+    .req_o                      (dmem_req_bus),
+    .req_type_o                 (),
+    .gnt_i                      (dmem_gnt_bus),
+    .we_o                       (dmem_write_bus),
+    .addr_o                     (dmem_index_bus),
+    .wdata_o                    (dmem_wdata_bus),
+    .wmask_o                    (dmem_wmask_bus),
+    .intg_error_o               (dmem_bus_intg_violation),
+    .rdata_i                    (dmem_rdata_bus),
+    .rvalid_i                   (dmem_rvalid_bus),
+    .rerror_i                   (dmem_rerror_bus),
+    .compound_txn_in_progress_o (),
+    .readback_en_i              (prim_mubi_pkg::MuBi4False),
+    .readback_error_o           (),
+    .wr_collision_i             (dmem_wr_collision),
+    .write_pending_i            (dmem_wpending)
   );
 
   // Mux core and bus access into dmem
@@ -765,8 +783,7 @@ module otbn
     .reg2hw,
     .hw2reg,
 
-    .intg_err_o(reg_bus_intg_violation),
-    .devmode_i (1'b1)
+    .intg_err_o(reg_bus_intg_violation)
   );
 
   // SEC_CM: BUS.INTEGRITY
@@ -1149,9 +1166,9 @@ module otbn
   // Collect up the error bits that don't come from the core itself and latch them so that they'll
   // be available when an operation finishes.
   assign non_core_err_bits = '{
-    lifecycle_escalation: lc_escalate_en[0] != lc_ctrl_pkg::Off,
+    lifecycle_escalation: lc_ctrl_pkg::lc_tx_test_true_loose(lc_escalate_en[0]),
     illegal_bus_access:   illegal_bus_access_q,
-    bad_internal_state:   otbn_scramble_state_error | missed_gnt_error_q | mubi_err,
+    bad_internal_state:   otbn_scramble_state_error | missed_gnt_error_q,
     bus_intg_violation:   bus_intg_violation
   };
 
@@ -1185,22 +1202,14 @@ module otbn
     bad_data_addr:        core_err_bits.bad_data_addr
   };
 
-  // Internally, OTBN uses MUBI types.
-  mubi4_t mubi_escalate_en;
-  assign mubi_escalate_en = lc_ctrl_pkg::lc_to_mubi4(lc_escalate_en[1]);
-
-  // An error signal going down into the core to show that it should locally escalate
-  assign core_escalate_en = mubi4_or_hi(
-      mubi4_bool_to_mubi(|{non_core_err_bits.illegal_bus_access,
-                           non_core_err_bits.bad_internal_state,
-                           non_core_err_bits.bus_intg_violation}),
-      mubi_escalate_en
-  );
-
-  // Signal error if MuBi input signals take on invalid values as this means something bad is
-  // happening. The explicit error detection is required as the mubi4_or_hi operations above
-  // might mask invalid values depending on other input operands.
-  assign mubi_err = mubi4_test_invalid(mubi_escalate_en);
+  // An error signal going down into the core to show that it should locally escalate. In
+  // accordance with the lc_ctrl spec, all values of the lc_escalate_en signal other than the OFF
+  // value must be interpreted as ON.
+  assign core_escalate_en = mubi4_bool_to_mubi(
+      |{non_core_err_bits.illegal_bus_access,
+        non_core_err_bits.bad_internal_state,
+        non_core_err_bits.bus_intg_violation,
+        lc_ctrl_pkg::lc_tx_test_true_loose(lc_escalate_en[1])});
 
   // The core can never signal a write to IMEM
   assign imem_write_core = 1'b0;
@@ -1229,7 +1238,8 @@ module otbn
       u_otbn_core.u_otbn_rf_base.gen_rf_base_ff.u_otbn_rf_base_inner.g_rf_flops[i].rf_reg_q !=
         EccZeroWord,
       clk_i,
-      !rst_ni || u_otbn_core.urnd_reseed_err || u_otbn_core.u_otbn_start_stop_control.mubi_err_d)
+      !rst_ni || u_otbn_core.urnd_reseed_err || u_otbn_core.u_otbn_start_stop_control.mubi_err_d ||
+      u_otbn_core.u_otbn_start_stop_control.state_error_d)
     // After execution, it's expected to see a change resulting with a nonzero register value
     `ASSERT(SecWipeChangedBaseRegs_A,
       $rose(busy_secure_wipe) |-> ((##[0:$]
@@ -1239,36 +1249,50 @@ module otbn
           u_otbn_core.u_otbn_rf_base.gen_rf_base_ff.u_otbn_rf_base_inner.g_rf_flops[i].rf_reg_q))
         within ($rose(busy_secure_wipe) ##[0:$] $fell(busy_secure_wipe))),
       clk_i,
-      !rst_ni || u_otbn_core.urnd_reseed_err || u_otbn_core.u_otbn_start_stop_control.mubi_err_d)
+      !rst_ni || u_otbn_core.urnd_reseed_err || u_otbn_core.u_otbn_start_stop_control.mubi_err_d ||
+      u_otbn_core.u_otbn_start_stop_control.state_error_d)
   end
 
-  // WDR assertions for secure wipe
-  // 1. urnd_reseed_err disables the assertion because secure wipe finishes with failure and OTBN
-  // goes to LOCKED state immediately after this error which means that it's not guaranteed to have
-  // secure wiping complete.
-  // 2. mubi_err_d of start_stop_control disables the internal secure wipe related assertion
-  // because a fatal error affecting internal secure wiping could cause an immediate locking
-  // behaviour in which it's not guaranteed to see a succesful secure wipe.
-  for (genvar i = 0; i < NWdr; ++i) begin : gen_sec_wipe_wdr_asserts
-    // Initial secure wipe needs to initialise all registers to nonzero
-    `ASSERT(InitSecWipeNonZeroWideRegs_A,
-            $fell(busy_secure_wipe) |->
-              u_otbn_core.u_otbn_rf_bignum.gen_rf_bignum_ff.u_otbn_rf_bignum_inner.rf[i] !=
-                EccWideZeroWord,
-            clk_i,
-            !rst_ni || u_otbn_core.urnd_reseed_err ||
-              u_otbn_core.u_otbn_start_stop_control.mubi_err_d)
+  // We have several assertions that check that secure wipe worked properly. However, we've also got
+  // some tests where we force nets, stopping it from working properly! That's fine, and the tests
+  // are checking that some other mechanism catches the problem. However, we don't want the
+  // simulation to die with a failed assertion, so we put everything in a named block which we can
+  // turn off with $assertoff.
+  //
+  // The silly-looking name is to avoid a lint warning. Verible (correctly) points out that
+  // SystemVerilog doesn't allow bare begin/end blocks at module level. So I cheated and put
+  // everything in an if(1) block. But this is treated as a generate block, and our lint rules
+  // therefore expect its name to start with a "g_".
+  if (1) begin : g_secure_wipe_assertions
+    // WDR assertions for secure wipe
+    // 1. urnd_reseed_err disables the assertion because secure wipe finishes with failure and OTBN
+    // goes to LOCKED state immediately after this error which means that it's not guaranteed to
+    // have secure wiping complete.
+    // 2. mubi_err_d of start_stop_control disables the internal secure wipe related assertion
+    // because a fatal error affecting internal secure wiping could cause an immediate locking
+    // behaviour in which it's not guaranteed to see a succesful secure wipe.
+    for (genvar i = 0; i < NWdr; ++i) begin : gen_sec_wipe_wdr_asserts
+      // Initial secure wipe needs to initialise all registers to nonzero
+      `ASSERT(InitSecWipeNonZeroWideRegs_A,
+              $fell(busy_secure_wipe) |->
+                u_otbn_core.u_otbn_rf_bignum.gen_rf_bignum_ff.u_otbn_rf_bignum_inner.rf[i] !=
+                  EccWideZeroWord,
+              clk_i,
+              !rst_ni || u_otbn_core.urnd_reseed_err ||
+                u_otbn_core.u_otbn_start_stop_control.mubi_err_d ||
+                u_otbn_core.u_otbn_start_stop_control.state_error_d)
 
-    // After execution, it's expected to see a change resulting with a nonzero register value
-    `ASSERT(SecWipeChangedWideRegs_A,
-            $rose(busy_secure_wipe) |-> ((##[0:$]
-              u_otbn_core.u_otbn_rf_bignum.gen_rf_bignum_ff.u_otbn_rf_bignum_inner.rf[i] !=
-                EccWideZeroWord &&
-              $changed(
-                u_otbn_core.u_otbn_rf_bignum.gen_rf_bignum_ff.u_otbn_rf_bignum_inner.rf[i]))
-              within ($rose(busy_secure_wipe) ##[0:$] $fell(busy_secure_wipe))),
-          clk_i, !rst_ni || u_otbn_core.urnd_reseed_err ||
-            u_otbn_core.u_otbn_start_stop_control.mubi_err_d)
+      // After execution, it's expected to see a change resulting with a nonzero register value
+      `ASSERT(SecWipeChangedWideRegs_A,
+              $rose(busy_secure_wipe) |-> ((##[0:$]
+                u_otbn_core.u_otbn_rf_bignum.gen_rf_bignum_ff.u_otbn_rf_bignum_inner.rf[i] !=
+                  EccWideZeroWord &&
+                $changed(
+                  u_otbn_core.u_otbn_rf_bignum.gen_rf_bignum_ff.u_otbn_rf_bignum_inner.rf[i]))
+                within ($rose(busy_secure_wipe) ##[0:$] $fell(busy_secure_wipe))),
+            clk_i, !rst_ni || u_otbn_core.urnd_reseed_err ||
+              u_otbn_core.u_otbn_start_stop_control.mubi_err_d)
+    end
   end
 
   // Secure wipe needs to invalidate call and loop stack, initialize MOD, ACC to nonzero and set
@@ -1283,32 +1307,41 @@ module otbn
           $fell(busy_secure_wipe) |-> (!u_otbn_core.u_otbn_rf_base.u_call_stack.top_valid_o),
           clk_i,
           !rst_ni || u_otbn_core.urnd_reseed_err ||
-            u_otbn_core.u_otbn_start_stop_control.mubi_err_d)
+            u_otbn_core.u_otbn_start_stop_control.mubi_err_d ||
+            u_otbn_core.u_otbn_start_stop_control.state_error_d ||
+            u_otbn_core.u_otbn_start_stop_control.state_error_d)
   `ASSERT(SecWipeInvalidLoopStack_A,
           $fell(busy_secure_wipe) |->
             (!u_otbn_core.u_otbn_controller.u_otbn_loop_controller.loop_info_stack.top_valid_o),
           clk_i,
           !rst_ni || u_otbn_core.urnd_reseed_err ||
-            u_otbn_core.u_otbn_start_stop_control.mubi_err_d)
+            u_otbn_core.u_otbn_start_stop_control.mubi_err_d ||
+            u_otbn_core.u_otbn_start_stop_control.state_error_d ||
+            u_otbn_core.u_otbn_start_stop_control.state_error_d)
 
   `ASSERT(SecWipeNonZeroMod_A,
           $fell(busy_secure_wipe) |-> u_otbn_core.u_otbn_alu_bignum.mod_intg_q != EccWideZeroWord,
           clk_i,
           !rst_ni || u_otbn_core.urnd_reseed_err ||
-            u_otbn_core.u_otbn_start_stop_control.mubi_err_d)
+            u_otbn_core.u_otbn_start_stop_control.mubi_err_d ||
+            u_otbn_core.u_otbn_start_stop_control.state_error_d ||
+            u_otbn_core.u_otbn_start_stop_control.state_error_d)
 
   `ASSERT(SecWipeNonZeroACC_A,
           $fell(busy_secure_wipe) |->
             u_otbn_core.u_otbn_alu_bignum.ispr_acc_intg_i != EccWideZeroWord,
           clk_i,
           !rst_ni || u_otbn_core.urnd_reseed_err ||
-            u_otbn_core.u_otbn_start_stop_control.mubi_err_d)
+            u_otbn_core.u_otbn_start_stop_control.mubi_err_d ||
+            u_otbn_core.u_otbn_start_stop_control.state_error_d)
 
   `ASSERT(SecWipeNonZeroFlags_A,
           $fell(busy_secure_wipe) |-> (!u_otbn_core.u_otbn_alu_bignum.flags_flattened),
           clk_i,
           !rst_ni || u_otbn_core.urnd_reseed_err ||
-            u_otbn_core.u_otbn_start_stop_control.mubi_err_d)
+            u_otbn_core.u_otbn_start_stop_control.mubi_err_d ||
+            u_otbn_core.u_otbn_start_stop_control.state_error_d ||
+            u_otbn_core.u_otbn_start_stop_control.state_error_d)
 
   // Secure wipe of IMEM and DMEM first happens with a key change from URND (while valid is zero)
   `ASSERT(ImemSecWipeRequiresUrndKey_A,
@@ -1400,17 +1433,41 @@ module otbn
       u_otbn_core.u_otbn_rf_bignum.gen_rf_bignum_ff.u_otbn_rf_bignum_inner.u_prim_onehot_check,
       alert_tx_o[AlertFatal])
 
-  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(DmemFifoWptrCheck_A,
+  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(DmemRspFifoWptrCheck_A,
       u_tlul_adapter_sram_dmem.u_rspfifo.gen_normal_fifo.u_fifo_cnt.gen_secure_ptrs.u_wptr,
       alert_tx_o[AlertFatal])
-  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(DmemFifoRptrCheck_A,
+  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(DmemRspFifoRptrCheck_A,
       u_tlul_adapter_sram_dmem.u_rspfifo.gen_normal_fifo.u_fifo_cnt.gen_secure_ptrs.u_rptr,
       alert_tx_o[AlertFatal])
+  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(DmemSramReqFifoWptrCheck_A,
+      u_tlul_adapter_sram_dmem.u_sramreqfifo.gen_normal_fifo.u_fifo_cnt.gen_secure_ptrs.u_wptr,
+      alert_tx_o[AlertFatal])
+  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(DmemSramReqFifoRptrCheck_A,
+      u_tlul_adapter_sram_dmem.u_sramreqfifo.gen_normal_fifo.u_fifo_cnt.gen_secure_ptrs.u_rptr,
+      alert_tx_o[AlertFatal])
+    `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(DmemReqFifoWptrCheck_A,
+      u_tlul_adapter_sram_dmem.u_reqfifo.gen_normal_fifo.u_fifo_cnt.gen_secure_ptrs.u_wptr,
+      alert_tx_o[AlertFatal])
+  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(DmemReqFifoRptrCheck_A,
+      u_tlul_adapter_sram_dmem.u_reqfifo.gen_normal_fifo.u_fifo_cnt.gen_secure_ptrs.u_rptr,
+      alert_tx_o[AlertFatal])
 
-  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(ImemFifoWptrCheck_A,
+  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(ImemRspFifoWptrCheck_A,
       u_tlul_adapter_sram_imem.u_rspfifo.gen_normal_fifo.u_fifo_cnt.gen_secure_ptrs.u_wptr,
       alert_tx_o[AlertFatal])
-  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(ImemFifoRptrCheck_A,
+  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(ImemRspFifoRptrCheck_A,
       u_tlul_adapter_sram_imem.u_rspfifo.gen_normal_fifo.u_fifo_cnt.gen_secure_ptrs.u_rptr,
+      alert_tx_o[AlertFatal])
+  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(ImemSramReqFifoWptrCheck_A,
+      u_tlul_adapter_sram_imem.u_sramreqfifo.gen_normal_fifo.u_fifo_cnt.gen_secure_ptrs.u_wptr,
+      alert_tx_o[AlertFatal])
+  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(ImemSramReqFifoRptrCheck_A,
+      u_tlul_adapter_sram_imem.u_sramreqfifo.gen_normal_fifo.u_fifo_cnt.gen_secure_ptrs.u_rptr,
+      alert_tx_o[AlertFatal])
+  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(ImemReqFifoWptrCheck_A,
+      u_tlul_adapter_sram_imem.u_reqfifo.gen_normal_fifo.u_fifo_cnt.gen_secure_ptrs.u_wptr,
+      alert_tx_o[AlertFatal])
+  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(ImemReqFifoRptrCheck_A,
+      u_tlul_adapter_sram_imem.u_reqfifo.gen_normal_fifo.u_fifo_cnt.gen_secure_ptrs.u_rptr,
       alert_tx_o[AlertFatal])
 endmodule

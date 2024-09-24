@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -21,7 +21,7 @@ package puf_reg_pkg;
     struct packed {
       logic        q;
       logic        qe;
-    } enable_puf;
+    } ready_cha;
     struct packed {
       logic        q;
       logic        qe;
@@ -29,16 +29,16 @@ package puf_reg_pkg;
     struct packed {
       logic        q;
       logic        qe;
-    } ready_cha;
+    } enable_puf;
   } puf_reg2hw_ctrl_signals_reg_t;
 
   typedef struct packed {
     struct packed {
       logic        q;
-    } response_valid_bit;
+    } response_done_2bit;
     struct packed {
       logic        q;
-    } response_done_2bit;
+    } response_valid_bit;
   } puf_reg2hw_state_signals_reg_t;
 
   typedef struct packed {
@@ -54,32 +54,12 @@ package puf_reg_pkg;
     struct packed {
       logic        d;
       logic        de;
-    } enable_puf;
-    struct packed {
-      logic        d;
-      logic        de;
-    } mode_puf;
-    struct packed {
-      logic        d;
-      logic        de;
-    } ready_cha;
-  } puf_hw2reg_ctrl_signals_reg_t;
-
-  typedef struct packed {
-    struct packed {
-      logic        d;
-      logic        de;
     } response_valid_bit;
     struct packed {
       logic        d;
       logic        de;
     } response_done_2bit;
   } puf_hw2reg_state_signals_reg_t;
-
-  typedef struct packed {
-    logic [31:0] d;
-    logic        de;
-  } puf_hw2reg_challenge_mreg_t;
 
   typedef struct packed {
     logic [31:0] d;
@@ -96,9 +76,7 @@ package puf_reg_pkg;
 
   // HW -> register type
   typedef struct packed {
-    puf_hw2reg_ctrl_signals_reg_t ctrl_signals; // [405:400]
-    puf_hw2reg_state_signals_reg_t state_signals; // [399:396]
-    puf_hw2reg_challenge_mreg_t [3:0] challenge; // [395:264]
+    puf_hw2reg_state_signals_reg_t state_signals; // [267:264]
     puf_hw2reg_response_mreg_t [7:0] response; // [263:0]
   } puf_hw2reg_t;
 
@@ -155,4 +133,3 @@ package puf_reg_pkg;
   };
 
 endpackage
-

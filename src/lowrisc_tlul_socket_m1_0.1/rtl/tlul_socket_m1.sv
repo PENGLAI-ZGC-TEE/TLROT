@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -70,8 +70,7 @@ module tlul_socket_m1 #(
   // Required ID width to distinguish between host ports
   //  Used in response steering
   localparam int unsigned IDW   = top_pkg::TL_AIW;
-  // localparam int unsigned STIDW = $clog2(M);
-  localparam int unsigned STIDW = 1;
+  localparam int unsigned STIDW = $clog2(M);
 
   tlul_pkg::tl_h2d_t hreq_fifo_o [M];
   tlul_pkg::tl_d2h_t hrsp_fifo_i [M];

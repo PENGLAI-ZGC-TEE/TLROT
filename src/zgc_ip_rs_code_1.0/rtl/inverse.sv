@@ -280,6 +280,6 @@ module inverse(y, x);
 		81: y = 8; // 252 -> 3
 		162: y = 4; // 253 -> 2
 		195: y = 2; // 254 -> 1
-		default: y = 0;
 	endcase
 endmodule
+

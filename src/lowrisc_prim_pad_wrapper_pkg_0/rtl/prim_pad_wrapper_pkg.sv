@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -17,7 +17,8 @@ package prim_pad_wrapper_pkg;
   typedef enum logic [1:0] {
     NoScan = 2'h0,
     ScanIn = 2'h1,
-    ScanOut = 2'h2
+    ScanOut = 2'h2,
+    ScanClock = 2'h3
   } scan_role_e;
 
   // Pad attributes
@@ -27,6 +28,7 @@ package prim_pad_wrapper_pkg;
   typedef struct packed {
     logic [DriveStrDw-1:0] drive_strength; // Drive strength (0000: weakest, 1111: strongest).
     logic [SlewRateDw-1:0] slew_rate;      // Slew rate (0: slowest, 11: fastest).
+    logic input_disable;                   // Input disable.
     logic od_en;                           // Open-drain enable
     logic schmitt_en;                      // Schmitt trigger enable.
     logic keep_en;                         // Keeper enable.

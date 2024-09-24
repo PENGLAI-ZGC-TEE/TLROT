@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -9,8 +9,8 @@
 `include "prim_assert.sv"
 
 module tlul_fifo_async #(
-  parameter int unsigned ReqDepth = 3,
-  parameter int unsigned RspDepth = 3
+  parameter int unsigned ReqDepth = 4,
+  parameter int unsigned RspDepth = 4
 ) (
   input                      clk_h_i,
   input                      rst_h_ni,

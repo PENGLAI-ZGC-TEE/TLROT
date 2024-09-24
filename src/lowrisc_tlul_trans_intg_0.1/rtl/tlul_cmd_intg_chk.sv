@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -41,9 +41,7 @@ module tlul_cmd_intg_chk import tlul_pkg::*; (
   // which needs to be covered with 0 and 1, so it's OK to disable the entire coverage.
   //VCS coverage off
   // pragma coverage off
-  // assign err_o = tl_i.a_valid & (|err | (|data_err));
-  //zdr
-  assign err_o = 1'b0;
+  assign err_o = tl_i.a_valid & (|err | (|data_err));
   //VCS coverage on
   // pragma coverage on
 

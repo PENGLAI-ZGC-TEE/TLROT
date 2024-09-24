@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -16,10 +16,7 @@ module puf_reg_top (
   input  puf_reg_pkg::puf_hw2reg_t hw2reg, // Read
 
   // Integrity check errors
-  output logic intg_err_o,
-
-  // Config
-  input devmode_i // If 1, explicit error return for unmapped register access
+  output logic intg_err_o
 );
 
   import puf_reg_pkg::* ;
@@ -119,7 +116,7 @@ module puf_reg_top (
   // cdc oversampling signals
 
   assign reg_rdata = reg_rdata_next ;
-  assign reg_error = (devmode_i & addrmiss) | wr_err | intg_err;
+  assign reg_error = addrmiss | wr_err | intg_err;
 
   // Define SW related signals
   // Format: <reg>_<field>_{wd|we|qs}
@@ -171,7 +168,8 @@ module puf_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_ctrl_signals_enable_puf (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -181,8 +179,8 @@ module puf_reg_top (
     .wd     (ctrl_signals_enable_puf_wd),
 
     // from internal hardware
-    .de     (hw2reg.ctrl_signals.enable_puf.de),
-    .d      (hw2reg.ctrl_signals.enable_puf.d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (ctrl_signals_flds_we[0]),
@@ -198,7 +196,8 @@ module puf_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_ctrl_signals_mode_puf (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -208,8 +207,8 @@ module puf_reg_top (
     .wd     (ctrl_signals_mode_puf_wd),
 
     // from internal hardware
-    .de     (hw2reg.ctrl_signals.mode_puf.de),
-    .d      (hw2reg.ctrl_signals.mode_puf.d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (ctrl_signals_flds_we[1]),
@@ -225,7 +224,8 @@ module puf_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_ctrl_signals_ready_cha (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -235,8 +235,8 @@ module puf_reg_top (
     .wd     (ctrl_signals_ready_cha_wd),
 
     // from internal hardware
-    .de     (hw2reg.ctrl_signals.ready_cha.de),
-    .d      (hw2reg.ctrl_signals.ready_cha.d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (ctrl_signals_flds_we[2]),
@@ -254,7 +254,8 @@ module puf_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_state_signals_response_valid_bit (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -280,7 +281,8 @@ module puf_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_state_signals_response_done_2bit (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -319,7 +321,8 @@ module puf_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_challenge_0 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -329,8 +332,8 @@ module puf_reg_top (
     .wd     (challenge_0_wd),
 
     // from internal hardware
-    .de     (hw2reg.challenge[0].de),
-    .d      (hw2reg.challenge[0].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (challenge_0_flds_we[0]),
@@ -359,7 +362,8 @@ module puf_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_challenge_1 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -369,8 +373,8 @@ module puf_reg_top (
     .wd     (challenge_1_wd),
 
     // from internal hardware
-    .de     (hw2reg.challenge[1].de),
-    .d      (hw2reg.challenge[1].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (challenge_1_flds_we[0]),
@@ -399,7 +403,8 @@ module puf_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_challenge_2 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -409,8 +414,8 @@ module puf_reg_top (
     .wd     (challenge_2_wd),
 
     // from internal hardware
-    .de     (hw2reg.challenge[2].de),
-    .d      (hw2reg.challenge[2].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (challenge_2_flds_we[0]),
@@ -439,7 +444,8 @@ module puf_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_challenge_3 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -449,8 +455,8 @@ module puf_reg_top (
     .wd     (challenge_3_wd),
 
     // from internal hardware
-    .de     (hw2reg.challenge[3].de),
-    .d      (hw2reg.challenge[3].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (challenge_3_flds_we[0]),
@@ -468,7 +474,8 @@ module puf_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_response_0 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -496,7 +503,8 @@ module puf_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_response_1 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -524,7 +532,8 @@ module puf_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_response_2 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -552,7 +561,8 @@ module puf_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_response_3 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -580,7 +590,8 @@ module puf_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_response_4 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -608,7 +619,8 @@ module puf_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_response_5 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -636,7 +648,8 @@ module puf_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_response_6 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -664,7 +677,8 @@ module puf_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_response_7 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -866,4 +880,3 @@ module puf_reg_top (
   //`ASSUME(reqParity, tl_reg_h2d.a_valid |-> tl_reg_h2d.a_user.chk_en == tlul_pkg::CheckDis)
 
 endmodule
-

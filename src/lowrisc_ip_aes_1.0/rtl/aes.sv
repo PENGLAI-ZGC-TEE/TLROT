@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -104,8 +104,7 @@ module aes
     .hw2reg,
     .shadowed_storage_err_o(shadowed_storage_err),
     .shadowed_update_err_o(shadowed_update_err),
-    .intg_err_o(intg_err_alert),
-    .devmode_i(1'b1)
+    .intg_err_o(intg_err_alert)
   );
 
   // SEC_CM: LC_ESCALATE_EN.INTERSIG.MUBI

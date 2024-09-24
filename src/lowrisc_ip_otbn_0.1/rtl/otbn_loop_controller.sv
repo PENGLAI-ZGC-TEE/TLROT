@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -76,9 +76,9 @@ module otbn_loop_controller
   loop_addr_info_t             next_loop_addr_info;
   logic                        next_loop_valid;
   logic loop_stack_push_req;
-  logic loop_stack_push;
   logic loop_stack_full;
   logic loop_stack_pop;
+  logic loop_stack_commit;
 
   logic loop_iteration_err;
   logic loop_branch_err;
@@ -169,19 +169,23 @@ module otbn_loop_controller
   // Decrement current loop counter when execution reaches the end instruction
   assign current_loop_counter_dec = ~state_reset_i & ~otbn_stall_i & at_current_loop_end_insn;
 
+  // Push current loop to the loop stack when a new loop starts (LOOP instruction executed).
+  // loop_stack_push_req indicates a push is requested, loop_stack_commit must also be asserted
+  // (when the loop start is committed) for it to take effect.
   assign loop_stack_push_req = loop_start_req_i;
 
   // The OTBN controller must not commit a loop request if it sees a loop error.
   `ASSERT(NoStartCommitIfLoopErr, loop_start_req_i && loop_start_commit_i |-> !sw_err_o)
 
-  // Push current loop to the loop stack when a new loop starts (LOOP instruction executed).
-  // loop_stack_push_req indicates a push is requested and loop_stack_push commands it to happen
-  // (when the loop start is committed).
-  assign loop_stack_push = loop_start_commit_i & loop_stack_push_req;
-
   // Pop from the loop stack when the current loop finishes. Stack internally checks to see if it's
   // empty when asked to pop so no need to factor that in here.
   assign loop_stack_pop = current_loop_finish;
+
+  // Pops always commit, pushes only commit if the loop start is committing. The commit from a loop
+  // start takes priority otherwise when we get an push and pop request at the same time, which
+  // triggers a software error, we can commit whilst requesting push and pop which we should never
+  // do.
+  assign loop_stack_commit = loop_stack_push_req ? loop_start_commit_i : loop_stack_pop;
 
   otbn_stack #(
     .StackWidth($bits(loop_addr_info_t)),
@@ -197,11 +201,13 @@ module otbn_loop_controller
     .clear_i(state_reset_i),
 
     .push_data_i(new_loop.loop_addr_info),
-    .push_i     (loop_stack_push),
+    .push_i     (loop_stack_push_req),
 
     .pop_i      (loop_stack_pop),
     .top_data_o (current_loop.loop_addr_info),
     .top_valid_o(current_loop_valid),
+
+    .commit_i(loop_stack_commit),
 
     .stack_wr_idx_o(loop_stack_wr_idx),
     .stack_write_o (loop_stack_write),
@@ -216,7 +222,7 @@ module otbn_loop_controller
     logic loop_count_set;
     logic loop_count_dec;
 
-    assign loop_count_set = loop_stack_write & (loop_stack_wr_idx == i_count);
+    assign loop_count_set = loop_stack_write & (loop_stack_wr_idx == i_count) & loop_stack_commit;
     assign loop_count_dec = current_loop_counter_dec & (loop_stack_rd_idx == i_count);
 
     //SEC_CM: LOOP_STACK.CTR.REDUN
@@ -226,15 +232,16 @@ module otbn_loop_controller
     ) u_loop_count (
       .clk_i,
       .rst_ni,
-      .clr_i     (state_reset_i),
-      .set_i     (loop_count_set),
-      .set_cnt_i (new_loop.loop_iterations),
-      .incr_en_i (1'b0),
-      .decr_en_i (loop_count_dec), // count down
-      .step_i    (32'd1),
-      .cnt_o     (loop_counters[i_count]),
-      .cnt_next_o(),
-      .err_o     (loop_counter_err[i_count])
+      .clr_i             (state_reset_i),
+      .set_i             (loop_count_set),
+      .set_cnt_i         (new_loop.loop_iterations),
+      .incr_en_i         (1'b0),
+      .decr_en_i         (loop_count_dec), // count down
+      .step_i            (32'd1),
+      .commit_i          (1'b1),
+      .cnt_o             (loop_counters[i_count]),
+      .cnt_after_commit_o(),
+      .err_o             (loop_counter_err[i_count])
     );
 
     assign loop_counter_err_d[i_count] = loop_counter_err_q[i_count] | loop_counter_err[i_count];
@@ -276,11 +283,10 @@ module otbn_loop_controller
     .syndrome_o (),
     .err_o      (current_loop_intg_err)
   );
-  //zdr ecc disable
-  // logic current_loop_intg_err_zdr = (|current_loop_intg_err) & 1'b0;
+
   assign hw_err_o = (|loop_counter_err_d) |
                     loop_stack_cnt_err    |
-                    (((|current_loop_intg_err) & 1'b0) & current_loop_valid);
+                    ((|current_loop_intg_err) & current_loop_valid);
 
   assign predec_err_o =
     (loop_end_addr_predec_i != new_loop_end_addr_full[ImemAddrWidth-1:0]) & loop_start_req_i;
@@ -309,6 +315,14 @@ module otbn_loop_controller
   assign prefetch_loop_end_addr_o  = next_loop_addr_info.loop_end;
   assign prefetch_loop_jump_addr_o = next_loop_addr_info.loop_start;
 
-  `ASSERT(NoLoopStackPushAndPop, !(loop_stack_push && loop_stack_pop))
-  `ASSERT(NoLoopWriteIfCounterDec, current_loop_counter_dec |-> !loop_stack_write)
+  // Check that an instruction that tries to cause a stack push and pop at the same time will be
+  // reported as a SW error.
+  `ASSERT(LoopStackPushAndPopCausesErr, loop_stack_push_req && loop_stack_pop |-> sw_err_o)
+  `ASSERT(LoopStackPushAndPopNeverCommits,
+    loop_stack_push_req && loop_stack_pop |-> ~loop_stack_commit)
+
+  // The stack counter shouldn't get decremented at the same time as we write to the top of the loop
+  // stack. This can only happen on a combined push and pop, which will cause a SW error (so the
+  // contents of the stack will no longer matter any more).
+  `ASSERT(NoLoopWriteIfCounterDec, current_loop_counter_dec |-> (!loop_stack_write | sw_err_o))
 endmodule

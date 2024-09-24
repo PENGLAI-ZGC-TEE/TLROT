@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -16,10 +16,7 @@ module rs_encode_reg_top (
   input  rs_encode_reg_pkg::rs_encode_hw2reg_t hw2reg, // Read
 
   // Integrity check errors
-  output logic intg_err_o,
-
-  // Config
-  input devmode_i // If 1, explicit error return for unmapped register access
+  output logic intg_err_o
 );
 
   import rs_encode_reg_pkg::* ;
@@ -119,7 +116,7 @@ module rs_encode_reg_top (
   // cdc oversampling signals
 
   assign reg_rdata = reg_rdata_next ;
-  assign reg_error = (devmode_i & addrmiss) | wr_err | intg_err;
+  assign reg_error = addrmiss | wr_err | intg_err;
 
   // Define SW related signals
   // Format: <reg>_<field>_{wd|we|qs}
@@ -325,7 +322,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_ctrl_signals_encode_en (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -335,8 +333,8 @@ module rs_encode_reg_top (
     .wd     (ctrl_signals_encode_en_wd),
 
     // from internal hardware
-    .de     (hw2reg.ctrl_signals.encode_en.de),
-    .d      (hw2reg.ctrl_signals.encode_en.d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (ctrl_signals_flds_we[0]),
@@ -352,7 +350,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (1'h1)
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
   ) u_ctrl_signals_clrn (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -362,8 +361,8 @@ module rs_encode_reg_top (
     .wd     (ctrl_signals_clrn_wd),
 
     // from internal hardware
-    .de     (hw2reg.ctrl_signals.clrn.de),
-    .d      (hw2reg.ctrl_signals.clrn.d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (ctrl_signals_flds_we[1]),
@@ -381,7 +380,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_state_signals_valid_bit (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -407,7 +407,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (1),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (1'h0)
+    .RESVAL  (1'h0),
+    .Mubi    (1'b0)
   ) u_state_signals_ready_bit (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -446,7 +447,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_0 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -456,8 +458,8 @@ module rs_encode_reg_top (
     .wd     (data_in_0_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[0].de),
-    .d      (hw2reg.data_in[0].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_0_flds_we[0]),
@@ -486,7 +488,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_1 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -496,8 +499,8 @@ module rs_encode_reg_top (
     .wd     (data_in_1_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[1].de),
-    .d      (hw2reg.data_in[1].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_1_flds_we[0]),
@@ -526,7 +529,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_2 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -536,8 +540,8 @@ module rs_encode_reg_top (
     .wd     (data_in_2_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[2].de),
-    .d      (hw2reg.data_in[2].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_2_flds_we[0]),
@@ -566,7 +570,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_3 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -576,8 +581,8 @@ module rs_encode_reg_top (
     .wd     (data_in_3_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[3].de),
-    .d      (hw2reg.data_in[3].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_3_flds_we[0]),
@@ -606,7 +611,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_4 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -616,8 +622,8 @@ module rs_encode_reg_top (
     .wd     (data_in_4_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[4].de),
-    .d      (hw2reg.data_in[4].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_4_flds_we[0]),
@@ -646,7 +652,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_5 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -656,8 +663,8 @@ module rs_encode_reg_top (
     .wd     (data_in_5_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[5].de),
-    .d      (hw2reg.data_in[5].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_5_flds_we[0]),
@@ -686,7 +693,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_6 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -696,8 +704,8 @@ module rs_encode_reg_top (
     .wd     (data_in_6_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[6].de),
-    .d      (hw2reg.data_in[6].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_6_flds_we[0]),
@@ -726,7 +734,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_7 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -736,8 +745,8 @@ module rs_encode_reg_top (
     .wd     (data_in_7_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[7].de),
-    .d      (hw2reg.data_in[7].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_7_flds_we[0]),
@@ -766,7 +775,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_8 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -776,8 +786,8 @@ module rs_encode_reg_top (
     .wd     (data_in_8_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[8].de),
-    .d      (hw2reg.data_in[8].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_8_flds_we[0]),
@@ -806,7 +816,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_9 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -816,8 +827,8 @@ module rs_encode_reg_top (
     .wd     (data_in_9_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[9].de),
-    .d      (hw2reg.data_in[9].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_9_flds_we[0]),
@@ -846,7 +857,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_10 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -856,8 +868,8 @@ module rs_encode_reg_top (
     .wd     (data_in_10_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[10].de),
-    .d      (hw2reg.data_in[10].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_10_flds_we[0]),
@@ -886,7 +898,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_11 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -896,8 +909,8 @@ module rs_encode_reg_top (
     .wd     (data_in_11_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[11].de),
-    .d      (hw2reg.data_in[11].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_11_flds_we[0]),
@@ -926,7 +939,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_12 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -936,8 +950,8 @@ module rs_encode_reg_top (
     .wd     (data_in_12_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[12].de),
-    .d      (hw2reg.data_in[12].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_12_flds_we[0]),
@@ -966,7 +980,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_13 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -976,8 +991,8 @@ module rs_encode_reg_top (
     .wd     (data_in_13_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[13].de),
-    .d      (hw2reg.data_in[13].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_13_flds_we[0]),
@@ -1006,7 +1021,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_14 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1016,8 +1032,8 @@ module rs_encode_reg_top (
     .wd     (data_in_14_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[14].de),
-    .d      (hw2reg.data_in[14].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_14_flds_we[0]),
@@ -1046,7 +1062,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_15 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1056,8 +1073,8 @@ module rs_encode_reg_top (
     .wd     (data_in_15_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[15].de),
-    .d      (hw2reg.data_in[15].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_15_flds_we[0]),
@@ -1086,7 +1103,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_16 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1096,8 +1114,8 @@ module rs_encode_reg_top (
     .wd     (data_in_16_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[16].de),
-    .d      (hw2reg.data_in[16].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_16_flds_we[0]),
@@ -1126,7 +1144,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_17 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1136,8 +1155,8 @@ module rs_encode_reg_top (
     .wd     (data_in_17_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[17].de),
-    .d      (hw2reg.data_in[17].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_17_flds_we[0]),
@@ -1166,7 +1185,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_18 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1176,8 +1196,8 @@ module rs_encode_reg_top (
     .wd     (data_in_18_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[18].de),
-    .d      (hw2reg.data_in[18].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_18_flds_we[0]),
@@ -1206,7 +1226,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_19 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1216,8 +1237,8 @@ module rs_encode_reg_top (
     .wd     (data_in_19_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[19].de),
-    .d      (hw2reg.data_in[19].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_19_flds_we[0]),
@@ -1246,7 +1267,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_20 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1256,8 +1278,8 @@ module rs_encode_reg_top (
     .wd     (data_in_20_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[20].de),
-    .d      (hw2reg.data_in[20].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_20_flds_we[0]),
@@ -1286,7 +1308,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_21 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1296,8 +1319,8 @@ module rs_encode_reg_top (
     .wd     (data_in_21_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[21].de),
-    .d      (hw2reg.data_in[21].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_21_flds_we[0]),
@@ -1326,7 +1349,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_22 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1336,8 +1360,8 @@ module rs_encode_reg_top (
     .wd     (data_in_22_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[22].de),
-    .d      (hw2reg.data_in[22].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_22_flds_we[0]),
@@ -1366,7 +1390,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_23 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1376,8 +1401,8 @@ module rs_encode_reg_top (
     .wd     (data_in_23_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[23].de),
-    .d      (hw2reg.data_in[23].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_23_flds_we[0]),
@@ -1406,7 +1431,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_24 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1416,8 +1442,8 @@ module rs_encode_reg_top (
     .wd     (data_in_24_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[24].de),
-    .d      (hw2reg.data_in[24].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_24_flds_we[0]),
@@ -1446,7 +1472,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_25 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1456,8 +1483,8 @@ module rs_encode_reg_top (
     .wd     (data_in_25_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[25].de),
-    .d      (hw2reg.data_in[25].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_25_flds_we[0]),
@@ -1486,7 +1513,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_26 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1496,8 +1524,8 @@ module rs_encode_reg_top (
     .wd     (data_in_26_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[26].de),
-    .d      (hw2reg.data_in[26].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_26_flds_we[0]),
@@ -1526,7 +1554,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_27 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1536,8 +1565,8 @@ module rs_encode_reg_top (
     .wd     (data_in_27_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[27].de),
-    .d      (hw2reg.data_in[27].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_27_flds_we[0]),
@@ -1566,7 +1595,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_28 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1576,8 +1606,8 @@ module rs_encode_reg_top (
     .wd     (data_in_28_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[28].de),
-    .d      (hw2reg.data_in[28].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_28_flds_we[0]),
@@ -1606,7 +1636,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_29 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1616,8 +1647,8 @@ module rs_encode_reg_top (
     .wd     (data_in_29_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[29].de),
-    .d      (hw2reg.data_in[29].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_29_flds_we[0]),
@@ -1646,7 +1677,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_30 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1656,8 +1688,8 @@ module rs_encode_reg_top (
     .wd     (data_in_30_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[30].de),
-    .d      (hw2reg.data_in[30].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_30_flds_we[0]),
@@ -1686,7 +1718,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_31 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1696,8 +1729,8 @@ module rs_encode_reg_top (
     .wd     (data_in_31_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[31].de),
-    .d      (hw2reg.data_in[31].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_31_flds_we[0]),
@@ -1726,7 +1759,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_32 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1736,8 +1770,8 @@ module rs_encode_reg_top (
     .wd     (data_in_32_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[32].de),
-    .d      (hw2reg.data_in[32].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_32_flds_we[0]),
@@ -1766,7 +1800,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_33 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1776,8 +1811,8 @@ module rs_encode_reg_top (
     .wd     (data_in_33_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[33].de),
-    .d      (hw2reg.data_in[33].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_33_flds_we[0]),
@@ -1806,7 +1841,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_34 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1816,8 +1852,8 @@ module rs_encode_reg_top (
     .wd     (data_in_34_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[34].de),
-    .d      (hw2reg.data_in[34].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_34_flds_we[0]),
@@ -1846,7 +1882,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_35 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1856,8 +1893,8 @@ module rs_encode_reg_top (
     .wd     (data_in_35_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[35].de),
-    .d      (hw2reg.data_in[35].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_35_flds_we[0]),
@@ -1886,7 +1923,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_36 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1896,8 +1934,8 @@ module rs_encode_reg_top (
     .wd     (data_in_36_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[36].de),
-    .d      (hw2reg.data_in[36].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_36_flds_we[0]),
@@ -1926,7 +1964,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_37 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1936,8 +1975,8 @@ module rs_encode_reg_top (
     .wd     (data_in_37_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[37].de),
-    .d      (hw2reg.data_in[37].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_37_flds_we[0]),
@@ -1966,7 +2005,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_38 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -1976,8 +2016,8 @@ module rs_encode_reg_top (
     .wd     (data_in_38_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[38].de),
-    .d      (hw2reg.data_in[38].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_38_flds_we[0]),
@@ -2006,7 +2046,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_39 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2016,8 +2057,8 @@ module rs_encode_reg_top (
     .wd     (data_in_39_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[39].de),
-    .d      (hw2reg.data_in[39].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_39_flds_we[0]),
@@ -2046,7 +2087,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_40 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2056,8 +2098,8 @@ module rs_encode_reg_top (
     .wd     (data_in_40_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[40].de),
-    .d      (hw2reg.data_in[40].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_40_flds_we[0]),
@@ -2086,7 +2128,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRW),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_data_in_41 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2096,8 +2139,8 @@ module rs_encode_reg_top (
     .wd     (data_in_41_wd),
 
     // from internal hardware
-    .de     (hw2reg.data_in[41].de),
-    .d      (hw2reg.data_in[41].d),
+    .de     (1'b0),
+    .d      ('0),
 
     // to internal hardware
     .qe     (data_in_41_flds_we[0]),
@@ -2115,7 +2158,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_0 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2143,7 +2187,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_1 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2171,7 +2216,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_2 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2199,7 +2245,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_3 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2227,7 +2274,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_4 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2255,7 +2303,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_5 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2283,7 +2332,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_6 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2311,7 +2361,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_7 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2339,7 +2390,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_8 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2367,7 +2419,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_9 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2395,7 +2448,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_10 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2423,7 +2477,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_11 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2451,7 +2506,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_12 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2479,7 +2535,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_13 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2507,7 +2564,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_14 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2535,7 +2593,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_15 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2563,7 +2622,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_16 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2591,7 +2651,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_17 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2619,7 +2680,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_18 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2647,7 +2709,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_19 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2675,7 +2738,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_20 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2703,7 +2767,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_21 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2731,7 +2796,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_22 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2759,7 +2825,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_23 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2787,7 +2854,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_24 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2815,7 +2883,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_25 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2843,7 +2912,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_26 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2871,7 +2941,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_27 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2899,7 +2970,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_28 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2927,7 +2999,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_29 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2955,7 +3028,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_30 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -2983,7 +3057,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_31 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3011,7 +3086,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_32 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3039,7 +3115,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_33 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3067,7 +3144,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_34 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3095,7 +3173,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_35 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3123,7 +3202,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_36 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3151,7 +3231,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_37 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3179,7 +3260,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_38 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3207,7 +3289,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_39 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3235,7 +3318,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_40 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3263,7 +3347,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_41 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3291,7 +3376,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_42 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3319,7 +3405,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_43 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3347,7 +3434,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_44 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3375,7 +3463,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_45 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3403,7 +3492,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_46 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3431,7 +3521,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_47 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3459,7 +3550,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_48 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -3487,7 +3579,8 @@ module rs_encode_reg_top (
   prim_subreg #(
     .DW      (32),
     .SwAccess(prim_subreg_pkg::SwAccessRO),
-    .RESVAL  (32'h0)
+    .RESVAL  (32'h0),
+    .Mubi    (1'b0)
   ) u_encoded_data_out_49 (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
@@ -4360,3 +4453,4 @@ module rs_encode_reg_top (
   //`ASSUME(reqParity, tl_reg_h2d.a_valid |-> tl_reg_h2d.a_user.chk_en == tlul_pkg::CheckDis)
 
 endmodule
+

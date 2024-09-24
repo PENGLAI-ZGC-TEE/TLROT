@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -7,6 +7,8 @@
 //    and return the genbits back to up four requesting
 //    end points.
 //
+
+`include "prim_assert.sv"
 
 module edn_core import edn_pkg::*;
 #(
@@ -44,8 +46,6 @@ module edn_core import edn_pkg::*;
   localparam int RescmdFifoDepth = 13;
   localparam int GencmdFifoWidth = 32;
   localparam int GencmdFifoDepth = 13;
-  localparam int OutputFifoWidth = 32;
-  localparam int OutputFifoDepth = 13;
   localparam int CSGenBitsWidth = 128;
   localparam int EndPointBusWidth = 32;
   localparam int RescmdFifoIdxWidth = $clog2(RescmdFifoDepth);
@@ -57,7 +57,6 @@ module edn_core import edn_pkg::*;
     FatalErr,
     ReseedCmdErr,
     GenCmdErr,
-    OutputErr,
     FifoWrErr,
     FifoRdErr,
     FifoStErr,
@@ -65,16 +64,14 @@ module edn_core import edn_pkg::*;
     CsrngCmdReqValid,
     CsrngCmdReqOut,
     CsrngCmdReqValidOut,
-    EnDelay,
-    IntrStatus,
-    SendReseedCmd,
-    SendGenCmd,
-    OutputClr,
+    SwCmdSts,
+    HwCmdSts,
     MainFsmEn,
     CmdFifoCnt,
     CsrngPackerClr,
     CsrngFipsEn,
     CsrngDataVld,
+    CsrngAckErr,
     AckFsmEn,
     LastEdnEntry
   } edn_enable_e;
@@ -83,6 +80,7 @@ module edn_core import edn_pkg::*;
   // signals
   logic event_edn_cmd_req_done;
   logic event_edn_fatal_err;
+  logic event_edn_recov_err;
   logic [EdnEnableCopies-1:FatalErr] edn_enable_fo;
   logic [FifoRstCopies-1:1] cmd_fifo_rst_fo;
   logic [BootReqCopies-1:1] boot_req_mode_fo;
@@ -95,22 +93,27 @@ module edn_core import edn_pkg::*;
   logic                    auto_req_mode_pfe;
   logic                    auto_req_mode_pfa;
   logic                    main_sm_done_pulse;
-  logic                    main_sm_busy;
   logic                    capt_gencmd_fifo_cnt;
   logic                    capt_rescmd_fifo_cnt;
   logic                    max_reqs_cnt_zero;
   logic                    max_reqs_cnt_load;
   logic                    max_reqs_between_reseed_load;
   logic [31:0]             max_reqs_between_reseed_bus;
-  logic                    csrng_cmd_ack;
-  logic                    csrng_cmd_ack_gated;
-  logic                    send_rescmd;
+  logic                    send_rescmd, send_rescmd_gated;
+  logic                    send_gencmd, send_gencmd_gated;
+  logic                    cs_cmd_handshake, gencmd_handshake, rescmd_handshake;
+  logic                    cs_hw_cmd_handshake;
+  logic                    cs_hw_cmd_handshake_1st;
+  logic                    main_sm_idle;
   logic                    cmd_sent;
-  logic                    send_gencmd;
-  logic                    boot_send_gencmd;
+  logic                    boot_wr_ins_cmd;
+  logic                    boot_send_ins_cmd;
+  logic                    boot_wr_gen_cmd;
+  logic                    boot_wr_uni_cmd;
   logic                    sw_cmd_req_load;
-  logic                    sw_cmd_valid;
+  logic                    sw_cmd_mode;
   logic [31:0]             sw_cmd_req_bus;
+  logic                    send_cs_cmd_gated;
   logic                    reseed_cmd_load;
   logic [31:0]             reseed_cmd_bus;
   logic                    generate_cmd_load;
@@ -123,12 +126,8 @@ module edn_core import edn_pkg::*;
   logic                      packer_cs_rready;
   logic [CSGenBitsWidth-1:0] packer_cs_rdata;
   logic                      boot_req_mode_pfa;
-  logic                      boot_wr_cmd_reg;
-  logic                      boot_wr_cmd_genfifo;
-  logic                      auto_first_ack_wait;
   logic                      auto_req_mode_busy;
-  logic                      auto_set_intr_gate;
-  logic                      auto_clr_intr_gate;
+  logic                      accept_sw_cmds_pulse;
 
   logic [NumEndPoints-1:0]   packer_ep_clr;
   logic [NumEndPoints-1:0]   packer_ep_ack;
@@ -152,6 +151,7 @@ module edn_core import edn_pkg::*;
   logic [2:0]                         sfifo_rescmd_err;
   logic                               sfifo_rescmd_full;
   logic                               sfifo_rescmd_not_empty;
+  logic                               sfifo_rescmd_int_err;
 
   // gencmd fifo
   logic [GencmdFifoWidth-1:0]         sfifo_gencmd_rdata;
@@ -164,21 +164,13 @@ module edn_core import edn_pkg::*;
   logic [2:0]                         sfifo_gencmd_err;
   logic                               sfifo_gencmd_full;
   logic                               sfifo_gencmd_not_empty;
-
-  // output fifo
-  logic [OutputFifoWidth-1:0]         sfifo_output_rdata;
-  logic                               sfifo_output_clr;
-  logic                               sfifo_output_push;
-  logic [OutputFifoWidth-1:0]         sfifo_output_wdata;
-  logic                               sfifo_output_pop;
-  logic                               sfifo_output_full;
-  logic                               sfifo_output_err_sum;
-  logic [2:0]                         sfifo_output_err;
-  logic                               sfifo_output_not_empty;
+  logic                               sfifo_gencmd_int_err;
 
   logic                               edn_main_sm_err_sum;
   logic [8:0]                         edn_main_sm_state;
   logic                               edn_main_sm_err;
+  logic                               csrng_ack_err;
+  logic                               reject_csrng_entropy;
   logic [30:0]                        err_code_test_bit;
   logic                               fifo_write_err_sum;
   logic                               fifo_read_err_sum;
@@ -210,16 +202,22 @@ module edn_core import edn_pkg::*;
   logic                               cs_cmd_req_vld_q, cs_cmd_req_vld_d;
   logic [31:0]                        cs_cmd_req_out_q, cs_cmd_req_out_d;
   logic                               cs_cmd_req_vld_out_q, cs_cmd_req_vld_out_d;
+  logic                               cs_cmd_req_vld_hold_q, cs_cmd_req_vld_hold_d;
   logic [RescmdFifoIdxWidth-1:0]      cmd_fifo_cnt_q, cmd_fifo_cnt_d;
-  logic                               send_rescmd_q, send_rescmd_d;
-  logic                               send_gencmd_q, send_gencmd_d;
   logic                               csrng_fips_q, csrng_fips_d;
   logic [NumEndPoints-1:0]            edn_fips_q, edn_fips_d;
   logic [63:0]                        cs_rdata_capt_q, cs_rdata_capt_d;
   logic                               cs_rdata_capt_vld_q, cs_rdata_capt_vld_d;
-  logic                               sw_rdy_sts_q, sw_rdy_sts_d;
-  logic                               intr_sts_gate_q, intr_sts_gate_d;
-  logic                               edn_enable_q, edn_enable_d;
+  logic                               cmd_rdy_q, cmd_rdy_d;
+  csrng_pkg::csrng_cmd_sts_e          csrng_cmd_sts_q, csrng_cmd_sts_d;
+  logic                               csrng_sw_cmd_ack_q, csrng_sw_cmd_ack_d;
+  logic                               csrng_hw_cmd_ack_q, csrng_hw_cmd_ack_d;
+  csrng_pkg::csrng_cmd_sts_e          csrng_hw_cmd_sts_q, csrng_hw_cmd_sts_d;
+  logic                               boot_mode_q, boot_mode_d,
+                                      auto_mode_q, auto_mode_d;
+  logic [3:0]                         cmd_type_q, cmd_type_d;
+  logic                               cmd_reg_rdy_d, cmd_reg_rdy_q;
+  logic                               cmd_hdr_busy_d, cmd_hdr_busy_q;
 
   always_ff @(posedge clk_i or negedge rst_ni)
     if (!rst_ni) begin
@@ -227,31 +225,42 @@ module edn_core import edn_pkg::*;
       cs_cmd_req_vld_q  <= '0;
       cs_cmd_req_out_q  <= '0;
       cs_cmd_req_vld_out_q  <= '0;
+      cs_cmd_req_vld_hold_q <= '0;
       cmd_fifo_cnt_q <= '0;
-      send_rescmd_q <= '0;
-      send_gencmd_q <= '0;
       csrng_fips_q <= '0;
       edn_fips_q <= '0;
       cs_rdata_capt_q <= '0;
       cs_rdata_capt_vld_q <= '0;
-      sw_rdy_sts_q   <= '0;
-      intr_sts_gate_q   <= '0;
-      edn_enable_q  <= '0;
+      cmd_rdy_q   <= '0;
+      csrng_cmd_sts_q   <= csrng_pkg::CMD_STS_SUCCESS;
+      csrng_sw_cmd_ack_q   <= '0;
+      csrng_hw_cmd_sts_q   <= csrng_pkg::CMD_STS_SUCCESS;
+      boot_mode_q   <= '0;
+      auto_mode_q   <= '0;
+      cmd_type_q   <= {1'b0, csrng_pkg::INV};
+      cmd_reg_rdy_q   <= '0;
+      cmd_hdr_busy_q <= 1'b0;
     end else begin
       cs_cmd_req_q  <= cs_cmd_req_d;
       cs_cmd_req_vld_q  <= cs_cmd_req_vld_d;
       cs_cmd_req_out_q <= cs_cmd_req_out_d;
       cs_cmd_req_vld_out_q <= cs_cmd_req_vld_out_d;
+      cs_cmd_req_vld_hold_q <= cs_cmd_req_vld_hold_d;
       cmd_fifo_cnt_q <= cmd_fifo_cnt_d;
-      send_rescmd_q <= send_rescmd_d;
-      send_gencmd_q <= send_gencmd_d;
       csrng_fips_q <= csrng_fips_d;
       edn_fips_q <= edn_fips_d;
       cs_rdata_capt_q <= cs_rdata_capt_d;
       cs_rdata_capt_vld_q <= cs_rdata_capt_vld_d;
-      sw_rdy_sts_q   <= sw_rdy_sts_d;
-      intr_sts_gate_q   <= intr_sts_gate_d;
-      edn_enable_q  <= edn_enable_d;
+      cmd_rdy_q   <= cmd_rdy_d;
+      csrng_cmd_sts_q   <= csrng_cmd_sts_d;
+      csrng_sw_cmd_ack_q   <= csrng_sw_cmd_ack_d;
+      csrng_hw_cmd_ack_q   <= csrng_hw_cmd_ack_d;
+      csrng_hw_cmd_sts_q   <= csrng_hw_cmd_sts_d;
+      boot_mode_q   <= boot_mode_d;
+      auto_mode_q   <= auto_mode_d;
+      cmd_type_q   <= cmd_type_d;
+      cmd_reg_rdy_q   <= cmd_reg_rdy_d;
+      cmd_hdr_busy_q <= cmd_hdr_busy_d;
     end
 
   //--------------------------------------------
@@ -290,20 +299,21 @@ module edn_core import edn_pkg::*;
   );
 
   // interrupt for sw app interface only
-  assign event_edn_cmd_req_done = csrng_cmd_ack_gated;
+  assign event_edn_cmd_req_done = csrng_cmd_i.csrng_rsp_ack && sw_cmd_mode;
 
-  // Counter and fsm errors are structural errors and are always
-  // active regardless of the functional state.
+  // Counter, internal FIFO errors and FSM errors are structural errors and are always active
+  // regardless of the functional state.
   logic fatal_loc_events;
-  assign fatal_loc_events =  edn_cntr_err_sum ||
+  assign fatal_loc_events =  sfifo_rescmd_int_err ||
+                             sfifo_gencmd_int_err ||
+                             edn_cntr_err_sum ||
                              edn_main_sm_err_sum ||
                              edn_ack_sm_err_sum;
 
   // set the interrupt sources
   assign event_edn_fatal_err = (edn_enable_fo[FatalErr] && (
          sfifo_rescmd_err_sum ||
-         sfifo_gencmd_err_sum ||
-         sfifo_output_err_sum )) ||
+         sfifo_gencmd_err_sum )) ||
          fatal_loc_events;
 
   // set fifo errors that are single instances of source
@@ -311,8 +321,6 @@ module edn_core import edn_pkg::*;
          err_code_test_bit[0];
   assign sfifo_gencmd_err_sum = (|sfifo_gencmd_err) ||
          err_code_test_bit[1];
-  assign sfifo_output_err_sum = (|sfifo_output_err) ||
-         err_code_test_bit[2];
   assign edn_ack_sm_err_sum = (|edn_ack_sm_err) ||
          err_code_test_bit[20];
   assign edn_main_sm_err_sum = edn_main_sm_err ||
@@ -323,17 +331,14 @@ module edn_core import edn_pkg::*;
   assign fifo_write_err_sum =
          sfifo_rescmd_err[2] ||
          sfifo_gencmd_err[2] ||
-         sfifo_output_err[2] ||
          err_code_test_bit[28];
   assign fifo_read_err_sum =
          sfifo_rescmd_err[1] ||
          sfifo_gencmd_err[1] ||
-         sfifo_output_err[1] ||
          err_code_test_bit[29];
   assign fifo_status_err_sum =
          sfifo_rescmd_err[0] ||
          sfifo_gencmd_err[0] ||
-         sfifo_output_err[0] ||
          err_code_test_bit[30];
 
 
@@ -343,9 +348,6 @@ module edn_core import edn_pkg::*;
 
   assign hw2reg.err_code.sfifo_gencmd_err.d = 1'b1;
   assign hw2reg.err_code.sfifo_gencmd_err.de = edn_enable_fo[GenCmdErr] && sfifo_gencmd_err_sum;
-
-  assign hw2reg.err_code.sfifo_output_err.d = 1'b1;
-  assign hw2reg.err_code.sfifo_output_err.de = edn_enable_fo[OutputErr] && sfifo_output_err_sum;
 
   assign hw2reg.err_code.edn_ack_sm_err.d = 1'b1;
   assign hw2reg.err_code.edn_ack_sm_err.de = edn_ack_sm_err_sum;
@@ -376,9 +378,33 @@ module edn_core import edn_pkg::*;
     assign err_code_test_bit[i] = (reg2hw.err_code_test.q == i) && reg2hw.err_code_test.qe;
   end : gen_err_code_test_bit
 
+  // CSRNG acknowledgement error status
+  assign csrng_ack_err = edn_enable_fo[CsrngAckErr] &&
+      csrng_cmd_i.csrng_rsp_ack && (csrng_cmd_i.csrng_rsp_sts != csrng_pkg::CMD_STS_SUCCESS);
+  assign hw2reg.recov_alert_sts.csrng_ack_err.de = csrng_ack_err;
+  assign hw2reg.recov_alert_sts.csrng_ack_err.d  = csrng_ack_err;
+
+  // Combine all recoverable alert signals into one singular signal.
+  assign event_edn_recov_err = edn_bus_cmp_alert || cmd_fifo_rst_pfa || auto_req_mode_pfa ||
+                               boot_req_mode_pfa || edn_enable_pfa || csrng_ack_err;
+
+  // Turn event_edn_recov_err into a pulse for the case when
+  // the signals are high for more then one cycle.
+  prim_edge_detector #(
+    .Width(1),
+    .ResetValue(0),
+    .EnSync(0)
+  ) u_prim_edge_detector_recov_alert (
+    .clk_i,
+    .rst_ni,
+    .d_i(event_edn_recov_err),
+    .q_sync_o(),
+    .q_posedge_pulse_o(recov_alert_o),
+    .q_negedge_pulse_o()
+  );
 
   // alert - send all interrupt sources to the alert for the fatal case
-  assign fatal_alert_o = event_edn_fatal_err;
+  assign fatal_alert_o = event_edn_fatal_err || sfifo_rescmd_int_err || sfifo_gencmd_int_err;
 
   // alert test
   assign recov_alert_test_o = {
@@ -461,7 +487,7 @@ module edn_core import edn_pkg::*;
 
   // SW interface connection
   // cmd req
-  assign sw_cmd_req_load = reg2hw.sw_cmd_req.qe & sw_cmd_valid;
+  assign sw_cmd_req_load = reg2hw.sw_cmd_req.qe && cmd_reg_rdy_q;
   assign sw_cmd_req_bus = reg2hw.sw_cmd_req.q;
 
   assign max_reqs_between_reseed_load = reg2hw.max_num_reqs_between_reseeds.qe;
@@ -473,60 +499,178 @@ module edn_core import edn_pkg::*;
   assign generate_cmd_load = reg2hw.generate_cmd.qe;
   assign generate_cmd_bus = reg2hw.generate_cmd.q;
 
+  assign cs_cmd_handshake = cs_cmd_req_vld_out_q && send_cs_cmd_gated;
+  assign gencmd_handshake = cs_cmd_req_vld_out_q && send_gencmd_gated;
+  assign rescmd_handshake = cs_cmd_req_vld_out_q && send_rescmd_gated;
+
+  // The cs_cmd_req register feeds commands from the EDN TL-UL registers to the output register.
   assign cs_cmd_req_d =
          (!edn_enable_fo[CsrngCmdReq]) ? '0 :
-         boot_wr_cmd_reg ? boot_ins_cmd :
+         boot_wr_ins_cmd ? boot_ins_cmd :
+         boot_wr_gen_cmd ? boot_gen_cmd :
+         boot_wr_uni_cmd ? edn_pkg::BOOT_UNINSTANTIATE :
          sw_cmd_req_load ? sw_cmd_req_bus :
          cs_cmd_req_q;
 
+  // The cs_cmd_req_vld register handles the valid signal that is sent along with cs_cmd_req_q.
   assign cs_cmd_req_vld_d =
          (!edn_enable_fo[CsrngCmdReqValid]) ? '0 :
-         (sw_cmd_req_load || boot_wr_cmd_reg); // cmd reg write
+         cs_cmd_handshake ? '0 :
+         (sw_cmd_req_load || boot_wr_ins_cmd ||
+          boot_wr_gen_cmd || boot_wr_uni_cmd) ? 1'b1 :
+         cs_cmd_req_vld_q; // cmd reg write
 
+  assign send_cs_cmd_gated = cs_cmd_req_vld_q && csrng_cmd_i.csrng_req_ready;
+
+  // The cs_cmd_req_out register feeds the commands coming from the auto mode FIFOs
+  // or the cs_cmd_req register to the CSRNG.
   assign cs_cmd_req_out_d =
          (!edn_enable_fo[CsrngCmdReqOut]) ? '0 :
-         send_rescmd ? sfifo_rescmd_rdata :
-         (send_gencmd || boot_send_gencmd) ? sfifo_gencmd_rdata :
-         cs_cmd_req_q;
+         // Update the output value with the next word of the reseed command in auto mode.
+         (send_rescmd || capt_rescmd_fifo_cnt) ? (sfifo_rescmd_pop ?
+                                                  sfifo_rescmd_rdata :
+                                                  cs_cmd_req_out_q) :
+         // Update the output value with the next word of the generate command in auto mode.
+         (send_gencmd || capt_gencmd_fifo_cnt) ? (sfifo_gencmd_pop ?
+                                                  sfifo_gencmd_rdata :
+                                                  cs_cmd_req_out_q) :
+         // Update the output value with the next word of the cs_cmd_req register.
+         (cs_cmd_req_vld_q && !cs_cmd_handshake) ? cs_cmd_req_q :
+         cs_cmd_req_out_q;
 
+  // Hold the valid until completing the valid/ready handshake. This is required to not violate
+  // the valid/ready protocol in case of acknowledgement errors received from CSRNG.
+  assign cs_cmd_req_vld_hold_d =
+         (!edn_enable_fo[CsrngCmdReqValidOut]) ? 1'b0 :
+         (cs_cmd_req_vld_hold_q || cs_cmd_req_vld_out_q) && !csrng_cmd_i.csrng_req_ready;
+
+  // The cs_cmd_req_vld_out register handles the valid signal that is sent along with
+  // cs_cmd_req_out. Unless EDN is disabled, the valid must not be dropped before seeing the
+  // ready.
   assign cs_cmd_req_vld_out_d =
          (!edn_enable_fo[CsrngCmdReqValidOut]) ? '0 :
-         (send_rescmd || send_gencmd || (boot_send_gencmd && cmd_sent)) ? 1'b1 :
-         cs_cmd_req_vld_q;
+         cmd_sent ? '0 :
+         (send_rescmd || capt_rescmd_fifo_cnt) ? 1'b1 :
+         (send_gencmd || capt_gencmd_fifo_cnt) ? 1'b1 :
+         cs_cmd_req_vld_q && !cs_cmd_handshake;
 
+  // drive outputs
+  assign csrng_cmd_o.csrng_req_valid =
+         (cs_cmd_req_vld_out_q && !reject_csrng_entropy) || cs_cmd_req_vld_hold_q;
+  assign csrng_cmd_o.csrng_req_bus = cs_cmd_req_out_q;
 
-  // receive rdy
+  // Accept a new command only if no command is currently being written to SW_CMD_REQ
+  // and the register is ready for the next word.
   assign hw2reg.sw_cmd_sts.cmd_rdy.de = 1'b1;
   assign hw2reg.sw_cmd_sts.cmd_rdy.d = cmd_rdy;
-  assign cmd_rdy = !sw_cmd_req_load && sw_rdy_sts_q;
-  assign sw_rdy_sts_d =
-         !edn_enable_q ? 1'b0 :
+  assign cmd_rdy = !sw_cmd_req_load && cmd_rdy_d && cmd_reg_rdy_d;
+  // We accept SW commands only in SW or auto mode.
+  // In auto mode, sw_cmd_mode will transition to low after the initial instantiate command.
+  // In SW mode, cmd_rdy is low when a previous command has not been acked yet.
+  assign cmd_rdy_d =
+         !edn_enable_fo[SwCmdSts] ? 1'b0 :
+         !sw_cmd_mode ? 1'b0 :
+         reject_csrng_entropy ? 1'b0 :
          sw_cmd_req_load ? 1'b0 :
-         auto_first_ack_wait ? 1'b1 :
-         main_sm_busy ? 1'b0 :
-         csrng_cmd_i.csrng_req_ready ? 1'b1 :
-         sw_rdy_sts_q;
+         accept_sw_cmds_pulse ? 1'b1 :
+         csrng_cmd_i.csrng_rsp_ack ? 1'b1 :
+         cmd_rdy_q;
 
-  assign edn_enable_d = edn_enable_fo[EnDelay];
+  // cmd_reg_rdy_d is high if SW_CMD_REQ is ready to accept a new word.
+  assign hw2reg.sw_cmd_sts.cmd_reg_rdy.de = 1'b1;
+  assign hw2reg.sw_cmd_sts.cmd_reg_rdy.d = cmd_reg_rdy_d;
+  assign cmd_reg_rdy_d =
+         !edn_enable_fo[SwCmdSts] ? 1'b0 :
+         !sw_cmd_mode ? 1'b0 :
+         reject_csrng_entropy ? 1'b0 :
+         sw_cmd_req_load ? 1'b0 :
+         accept_sw_cmds_pulse ? 1'b1 :
+         cs_cmd_handshake ? 1'b1 :
+         cmd_reg_rdy_q;
 
-  // receive cmd ack
-  assign csrng_cmd_ack = csrng_cmd_i.csrng_rsp_ack;
-  assign csrng_cmd_ack_gated = csrng_cmd_ack && intr_sts_gate_q;
-  assign hw2reg.sw_cmd_sts.cmd_sts.de = csrng_cmd_ack_gated;
-  assign hw2reg.sw_cmd_sts.cmd_sts.d = csrng_cmd_i.csrng_rsp_sts;
+  // Whenever a sw_cmd_req is acked by CSRNG, update the command status.
+  assign hw2reg.sw_cmd_sts.cmd_sts.de = 1'b1;
+  assign hw2reg.sw_cmd_sts.cmd_sts.d = csrng_cmd_sts_d;
+  assign csrng_cmd_sts_d =
+         !edn_enable_fo[SwCmdSts] ? csrng_pkg::CMD_STS_SUCCESS :
+         csrng_cmd_i.csrng_rsp_ack && sw_cmd_mode &&
+            !reject_csrng_entropy ? csrng_cmd_i.csrng_rsp_sts :
+         csrng_cmd_sts_q;
 
-  assign intr_sts_gate_d =
-         !edn_enable_fo[IntrStatus] ? 1'b0 :
-         main_sm_done_pulse ? 1'b1 :
-         auto_set_intr_gate ? 1'b1 :
-         auto_clr_intr_gate ? 1'b0 :
-         intr_sts_gate_q;
+  // cmd_ack goes high only when a command is acknowledged that has been loaded into sw_cmd_req.
+  assign hw2reg.sw_cmd_sts.cmd_ack.de = 1'b1;
+  assign hw2reg.sw_cmd_sts.cmd_ack.d = csrng_sw_cmd_ack_d;
+  assign csrng_sw_cmd_ack_d =
+         !edn_enable_fo[SwCmdSts] ? 1'b0 :
+         sw_cmd_req_load ? 1'b0 :
+         csrng_cmd_i.csrng_rsp_ack && sw_cmd_mode && !reject_csrng_entropy ? 1'b1 :
+         csrng_sw_cmd_ack_q;
+
+  //--------------------------------------------
+  // hw_cmd_sts register
+  //--------------------------------------------
+  assign main_sm_idle = (edn_main_sm_state == Idle);
+  assign cs_hw_cmd_handshake = !sw_cmd_mode && csrng_cmd_o.csrng_req_valid &&
+                               csrng_cmd_i.csrng_req_ready;
+  assign cs_hw_cmd_handshake_1st = cs_hw_cmd_handshake &&
+                                   ((send_rescmd || capt_rescmd_fifo_cnt ||
+                                     send_gencmd || capt_gencmd_fifo_cnt) ? cmd_hdr_busy_q : 1'b1);
+
+  // Set the boot_mode field to one when boot mode is entered and to zero when it is left.
+  assign hw2reg.hw_cmd_sts.boot_mode.de = 1'b1;
+  assign hw2reg.hw_cmd_sts.boot_mode.d = boot_mode_d;
+  assign boot_mode_d = main_sm_done_pulse || main_sm_idle ? 1'b0 :
+                       boot_send_ins_cmd && cs_hw_cmd_handshake ? 1'b1 :
+                       boot_mode_q;
+  // Set the auto_mode field to one when auto mode is entered and to zero when it is left. In case
+  // the first handshake in automode leads to an error, we still set the auto_mode field to know
+  // that the error happened upon entering auto mode.
+  assign hw2reg.hw_cmd_sts.auto_mode.de = 1'b1;
+  assign hw2reg.hw_cmd_sts.auto_mode.d = auto_mode_d;
+  assign auto_mode_d = main_sm_done_pulse || main_sm_idle ? 1'b0 :
+                       auto_req_mode_busy && cs_hw_cmd_handshake ? 1'b1 :
+                       auto_mode_q;
+  // Record the cmd_sts signal each time a hardware command is acknowledged.
+  // Reset it each time a new hardware command is issued. In case we saw an error previously,
+  // keep status returned with the error.
+  assign hw2reg.hw_cmd_sts.cmd_sts.de = 1'b1;
+  assign hw2reg.hw_cmd_sts.cmd_sts.d = csrng_hw_cmd_sts_d;
+  assign csrng_hw_cmd_sts_d =
+         !edn_enable_fo[HwCmdSts] ? csrng_pkg::CMD_STS_SUCCESS :
+         csrng_cmd_i.csrng_rsp_ack && !sw_cmd_mode &&
+            !reject_csrng_entropy ? csrng_cmd_i.csrng_rsp_sts :
+         reject_csrng_entropy ? csrng_hw_cmd_sts_q :
+         cs_hw_cmd_handshake ? csrng_pkg::CMD_STS_SUCCESS :
+         csrng_hw_cmd_sts_q;
+  // Set the cmd_ack signal to high whenever a hardware command is acknowledged and set it
+  // to low whenever a new hardware command is issued to the CSRNG. Don't clear it in case we saw
+  // an error previously.
+  assign hw2reg.hw_cmd_sts.cmd_ack.de = 1'b1;
+  assign hw2reg.hw_cmd_sts.cmd_ack.d = csrng_hw_cmd_ack_d;
+  assign csrng_hw_cmd_ack_d =
+         !edn_enable_fo[HwCmdSts] ? 1'b0 :
+         csrng_cmd_i.csrng_rsp_ack && !sw_cmd_mode && !reject_csrng_entropy ? 1'b1 :
+         reject_csrng_entropy ? csrng_hw_cmd_ack_q :
+         cs_hw_cmd_handshake ? 1'b0 :
+         csrng_hw_cmd_ack_q;
+  // Set the cmd_type to the application command type value of the hardware controlled
+  // command issued last. Only the command header but not the additional data matters.
+  // Don't update it in case we saw an error previously.
+  assign hw2reg.hw_cmd_sts.cmd_type.de = 1'b1;
+  assign hw2reg.hw_cmd_sts.cmd_type.d = cmd_type_d;
+  assign cmd_type_d =
+         !edn_enable_fo[HwCmdSts] ? {1'b0, csrng_pkg::INV} :
+         reject_csrng_entropy ? cmd_type_q :
+         cs_hw_cmd_handshake_1st ? cs_cmd_req_out_q[3:0] : cmd_type_q;
 
   // rescmd fifo
+  // SEC_CM: FIFO.CTR.REDUN
   prim_fifo_sync #(
     .Width(RescmdFifoWidth),
     .Pass(0),
-    .Depth(RescmdFifoDepth)
+    .Depth(RescmdFifoDepth),
+    .OutputZeroIfEmpty(0),
+    .Secure(1)
   ) u_prim_fifo_sync_rescmd (
     .clk_i    (clk_i),
     .rst_ni   (rst_ni),
@@ -539,34 +683,37 @@ module edn_core import edn_pkg::*;
     .rdata_o  (sfifo_rescmd_rdata),
     .full_o   (sfifo_rescmd_full),
     .depth_o  (sfifo_rescmd_depth),
-    .err_o    ()
+    .err_o    (sfifo_rescmd_int_err)
   );
 
-  // feedback cmd back into rescmd fifo
-  assign send_rescmd_d = send_rescmd;
+  // Gate rescmd FIFO operations in case of CSRNG backpressure.
+  assign send_rescmd_gated = (send_rescmd || capt_rescmd_fifo_cnt) && csrng_cmd_i.csrng_req_ready;
 
   assign sfifo_rescmd_push =
-         (send_rescmd_q & edn_enable_fo[SendReseedCmd]) ? 1'b1  :
+         rescmd_handshake ? 1'b1  :
          reseed_cmd_load;
 
   assign sfifo_rescmd_wdata =
          auto_req_mode_busy ? cs_cmd_req_out_q :
          reseed_cmd_bus;
 
-  assign sfifo_rescmd_pop = send_rescmd;
+  assign sfifo_rescmd_pop = (rescmd_handshake && !cmd_sent) || capt_rescmd_fifo_cnt;
 
   assign sfifo_rescmd_clr = (cmd_fifo_rst_fo[1] || main_sm_done_pulse);
 
   assign sfifo_rescmd_err =
          {(sfifo_rescmd_push && sfifo_rescmd_full),
           (sfifo_rescmd_pop && !sfifo_rescmd_not_empty),
-          (sfifo_rescmd_full && !sfifo_rescmd_not_empty)};
+          (sfifo_rescmd_full && !sfifo_rescmd_not_empty) || sfifo_rescmd_int_err};
 
   // gencmd fifo
+  // SEC_CM: FIFO.CTR.REDUN
   prim_fifo_sync #(
     .Width(GencmdFifoWidth),
     .Pass(0),
-    .Depth(GencmdFifoDepth)
+    .Depth(GencmdFifoDepth),
+    .OutputZeroIfEmpty(0),
+    .Secure(1)
   ) u_prim_fifo_sync_gencmd (
     .clk_i    (clk_i),
     .rst_ni   (rst_ni),
@@ -579,64 +726,28 @@ module edn_core import edn_pkg::*;
     .rdata_o  (sfifo_gencmd_rdata),
     .full_o   (sfifo_gencmd_full),
     .depth_o  (sfifo_gencmd_depth),
-    .err_o    ()
+    .err_o    (sfifo_gencmd_int_err)
   );
 
-  // feedback cmd back into gencmd fifo
-  assign send_gencmd_d = send_gencmd;
+  // Gate gencmd FIFO operations in case of CSRNG backpressure.
+  assign send_gencmd_gated = (send_gencmd || capt_gencmd_fifo_cnt) && csrng_cmd_i.csrng_req_ready;
 
   assign sfifo_gencmd_push =
-         (boot_wr_cmd_genfifo & edn_enable_fo[SendGenCmd]) ? 1'b1 :
-         (send_gencmd_q & edn_enable_fo[SendGenCmd]) ? 1'b1  :
+         gencmd_handshake ? 1'b1 :
          generate_cmd_load;
 
   assign sfifo_gencmd_wdata =
-         boot_wr_cmd_genfifo ? boot_gen_cmd :
          auto_req_mode_busy ? cs_cmd_req_out_q :
          generate_cmd_bus;
 
-  assign sfifo_gencmd_pop = send_gencmd || boot_send_gencmd;
+  assign sfifo_gencmd_pop = (gencmd_handshake && !cmd_sent) || capt_gencmd_fifo_cnt;
 
   assign sfifo_gencmd_clr = (cmd_fifo_rst_fo[2] || main_sm_done_pulse);
 
   assign sfifo_gencmd_err =
          {(sfifo_gencmd_push && sfifo_gencmd_full),
           (sfifo_gencmd_pop && !sfifo_gencmd_not_empty),
-          (sfifo_gencmd_full && !sfifo_gencmd_not_empty)};
-
-  // output fifo
-  prim_fifo_sync #(
-    .Width(OutputFifoWidth),
-    .Pass(0),
-    .Depth(OutputFifoDepth)
-  ) u_prim_fifo_sync_output (
-    .clk_i    (clk_i),
-    .rst_ni   (rst_ni),
-    .clr_i    (sfifo_output_clr),
-    .wvalid_i (sfifo_output_push),
-    .wready_o (),
-    .wdata_i  (sfifo_output_wdata),
-    .rvalid_o (sfifo_output_not_empty),
-    .rready_i (sfifo_output_pop),
-    .rdata_o  (sfifo_output_rdata),
-    .full_o   (sfifo_output_full),
-    .depth_o  (),
-    .err_o    ()
-  );
-
-  // drive outputs
-  assign csrng_cmd_o.csrng_req_valid = sfifo_output_not_empty;
-  assign csrng_cmd_o.csrng_req_bus = sfifo_output_rdata;
-
-  assign sfifo_output_clr = !edn_enable_fo[OutputClr];
-  assign sfifo_output_push = cs_cmd_req_vld_out_q;
-  assign sfifo_output_wdata = cs_cmd_req_out_q;
-  assign sfifo_output_pop = sfifo_output_not_empty && csrng_cmd_i.csrng_req_ready;
-
-  assign sfifo_output_err =
-         {(sfifo_output_push && sfifo_output_full),
-          (sfifo_output_pop && !sfifo_output_not_empty),
-          (sfifo_output_full && !sfifo_output_not_empty)};
+          (sfifo_gencmd_full && !sfifo_gencmd_not_empty) || sfifo_gencmd_int_err};
 
   // sm to process csrng commands
   // SEC_CM: MAIN_SM.FSM.SPARSE
@@ -648,25 +759,25 @@ module edn_core import edn_pkg::*;
     .boot_req_mode_i        (boot_req_mode_fo[1]),
     .auto_req_mode_i        (auto_req_mode_pfe),
     .sw_cmd_req_load_i      (sw_cmd_req_load),
-    .sw_cmd_valid_o         (sw_cmd_valid),
-    .boot_wr_cmd_reg_o      (boot_wr_cmd_reg),
-    .boot_wr_cmd_genfifo_o  (boot_wr_cmd_genfifo),
-    .auto_set_intr_gate_o   (auto_set_intr_gate),
-    .auto_clr_intr_gate_o   (auto_clr_intr_gate),
-    .auto_first_ack_wait_o  (auto_first_ack_wait),
+    .sw_cmd_mode_o          (sw_cmd_mode),
+    .boot_wr_ins_cmd_o      (boot_wr_ins_cmd),
+    .boot_send_ins_cmd_o    (boot_send_ins_cmd),
+    .boot_wr_gen_cmd_o      (boot_wr_gen_cmd),
+    .boot_wr_uni_cmd_o      (boot_wr_uni_cmd),
+    .accept_sw_cmds_pulse_o (accept_sw_cmds_pulse),
     .main_sm_done_pulse_o   (main_sm_done_pulse),
-    .csrng_cmd_ack_i        (csrng_cmd_ack),
+    .csrng_cmd_ack_i        (csrng_cmd_i.csrng_rsp_ack),
     .capt_gencmd_fifo_cnt_o (capt_gencmd_fifo_cnt),
-    .boot_send_gencmd_o     (boot_send_gencmd),
     .send_gencmd_o          (send_gencmd),
     .max_reqs_cnt_zero_i    (max_reqs_cnt_zero),
     .capt_rescmd_fifo_cnt_o (capt_rescmd_fifo_cnt),
     .send_rescmd_o          (send_rescmd),
     .cmd_sent_i             (cmd_sent),
-    .local_escalate_i       (fatal_loc_events),
     .auto_req_mode_busy_o   (auto_req_mode_busy),
-    .main_sm_busy_o         (main_sm_busy),
     .main_sm_state_o        (edn_main_sm_state),
+    .csrng_ack_err_i        (csrng_ack_err),
+    .reject_csrng_entropy_o (reject_csrng_entropy),
+    .local_escalate_i       (fatal_loc_events),
     .main_sm_err_o          (edn_main_sm_err)
   );
 
@@ -676,7 +787,7 @@ module edn_core import edn_pkg::*;
   // SEC_CM: CTR.REDUN
   prim_count #(
     .Width(RegWidth),
-    .ResetValue({RegWidth{1'b1}})
+    .ResetValue(edn_reg_pkg::MaxNumReqsBetweenReseedsResval)
   ) u_prim_count_max_reqs_cntr (
     .clk_i,
     .rst_ni,
@@ -686,8 +797,9 @@ module edn_core import edn_pkg::*;
     .incr_en_i(1'b0),
     .decr_en_i(send_gencmd && cmd_sent), // count down
     .step_i(RegWidth'(1)),
+    .commit_i(1'b1),
     .cnt_o(max_reqs_cnt),
-    .cnt_next_o(),
+    .cnt_after_commit_o(),
     .err_o(max_reqs_cnt_err)
   );
 
@@ -702,12 +814,21 @@ module edn_core import edn_pkg::*;
   assign cmd_fifo_cnt_d =
          (!edn_enable_fo[CmdFifoCnt]) ? '0 :
          (cmd_fifo_rst_fo[3] || main_sm_done_pulse) ? '0 :
-         capt_gencmd_fifo_cnt ? (sfifo_gencmd_depth) :
-         capt_rescmd_fifo_cnt ? (sfifo_rescmd_depth) :
-         (send_gencmd || boot_send_gencmd || send_rescmd)? (cmd_fifo_cnt_q-1) :
+         capt_gencmd_fifo_cnt ? sfifo_gencmd_depth :
+         capt_rescmd_fifo_cnt ? sfifo_rescmd_depth :
+         (sfifo_gencmd_pop || sfifo_rescmd_pop) ? (cmd_fifo_cnt_q-1) :
          cmd_fifo_cnt_q;
 
-  assign cmd_sent = (cmd_fifo_cnt_q == RescmdFifoIdxWidth'(1));
+  // Consider a reseed command as sent if all values have been popped from the queue once
+  // and the handshake with CSRNG happend for the last word.
+  assign cmd_sent = (cmd_fifo_cnt_q == RescmdFifoIdxWidth'(1)) &&
+                    (gencmd_handshake || rescmd_handshake);
+
+  // Track whether we're currently sending the command header of a hardware Reseed or Generate
+  // command.
+  assign cmd_hdr_busy_d =
+      capt_gencmd_fifo_cnt || capt_rescmd_fifo_cnt ? 1'b1 :
+      cs_hw_cmd_handshake                          ? 1'b0 : cmd_hdr_busy_q;
 
   // SEC_CM: CONFIG.MUBI
   mubi4_t mubi_boot_req_mode;
@@ -778,9 +899,11 @@ module edn_core import edn_pkg::*;
   );
 
   assign packer_cs_clr = !edn_enable_fo[CsrngPackerClr];
-  assign packer_cs_push = csrng_cmd_i.genbits_valid;
+  assign packer_cs_push = csrng_cmd_i.genbits_valid && !reject_csrng_entropy &&
+                          !((csrng_cmd_i.csrng_rsp_sts != csrng_pkg::CMD_STS_SUCCESS) &&
+                              csrng_cmd_i.csrng_rsp_ack);
   assign packer_cs_wdata = csrng_cmd_i.genbits_bus;
-  assign csrng_cmd_o.genbits_ready = packer_cs_wready;
+  assign csrng_cmd_o.genbits_ready = packer_cs_wready && !reject_csrng_entropy;
   assign packer_cs_rready = packer_arb_valid;
   assign packer_arb_ready = packer_cs_rvalid;
 
@@ -811,21 +934,6 @@ module edn_core import edn_pkg::*;
   // continuous compare of the entropy data
   assign edn_bus_cmp_alert = cs_rdata_capt_vld && cs_rdata_capt_vld_q &&
          (cs_rdata_capt_q == packer_cs_rdata[63:0]);
-
-
-
-  prim_edge_detector #(
-    .Width(1),
-    .ResetValue(0),
-    .EnSync(0)
-  ) u_prim_edge_detector_recov_alert (
-    .clk_i,
-    .rst_ni,
-    .d_i(edn_bus_cmp_alert),
-    .q_sync_o(),
-    .q_posedge_pulse_o(recov_alert_o),
-    .q_negedge_pulse_o()
-  );
 
   assign hw2reg.recov_alert_sts.edn_bus_cmp_alert.de = edn_bus_cmp_alert;
   assign hw2reg.recov_alert_sts.edn_bus_cmp_alert.d  = edn_bus_cmp_alert;
@@ -886,10 +994,22 @@ module edn_core import edn_pkg::*;
   assign hw2reg.main_sm_state.d = edn_main_sm_state;
 
   //--------------------------------------------
+  // Assertions
+  //--------------------------------------------
+  // Do not accept new genbits into the CSRNG interface genbits FIFO if we are in the alert state
+  // due to a CSRNG status error response.
+  `ASSERT(CsErrAcceptNoEntropy_A, reject_csrng_entropy |-> packer_cs_push == 0)
+  // Do not issue new commands to the CSRNG if we are in the alert state due to a CSRNG status
+  // error response. The only exception is if we need to hold the valid to complete a started
+  // handshake.
+  `ASSERT(CsErrIssueNoCommands_A, reject_csrng_entropy |->
+      csrng_cmd_o.csrng_req_valid == 0 || cs_cmd_req_vld_hold_q == 1'b1)
+
+  //--------------------------------------------
   // unused signals
   //--------------------------------------------
 
-  assign unused_err_code_test_bit = (|err_code_test_bit[19:3]) || (|err_code_test_bit[27:22]);
+  assign unused_err_code_test_bit = (|err_code_test_bit[19:2]) || (|err_code_test_bit[27:22]);
 
 
 endmodule

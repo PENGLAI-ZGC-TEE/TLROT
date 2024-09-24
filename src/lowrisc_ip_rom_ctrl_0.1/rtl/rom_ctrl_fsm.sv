@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -22,13 +22,13 @@ module rom_ctrl_fsm
   // CSR inputs for DIGEST and EXP_DIGEST. To make the indexing look nicer, these are ordered so
   // that DIGEST_0 is the bottom 32 bits (they get reversed while we're shuffling around the wires
   // in rom_ctrl).
-  input logic [TopCount*64-1:0]      digest_i,
-  input logic [TopCount*64-1:0]      exp_digest_i,
+  input logic [TopCount*32-1:0]      digest_i,
+  input logic [TopCount*32-1:0]      exp_digest_i,
 
   // CSR outputs for DIGEST and EXP_DIGEST. Ordered with word 0 as LSB.
-  output logic [TopCount*64-1:0]     digest_o,
+  output logic [TopCount*32-1:0]     digest_o,
   output logic                       digest_vld_o,
-  output logic [63:0]                exp_digest_o,
+  output logic [31:0]                exp_digest_o,
   output logic                       exp_digest_vld_o,
   output logic [vbits(TopCount)-1:0] exp_digest_idx_o,
 
@@ -43,7 +43,7 @@ module rom_ctrl_fsm
 
   // To KMAC (digest data)
   input logic                        kmac_done_i,
-  input logic [TopCount*64-1:0]      kmac_digest_i,
+  input logic [TopCount*32-1:0]      kmac_digest_i,
   input logic                        kmac_err_i,
 
   // To ROM mux
@@ -52,7 +52,7 @@ module rom_ctrl_fsm
   output logic                       rom_req_o,
 
   // Raw bits from ROM
-  input logic [63:0]                 rom_data_i,
+  input logic [31:0]                 rom_data_i,
 
   // To alert system
   output logic                       alert_o
@@ -204,6 +204,9 @@ module rom_ctrl_fsm
       state_d = Invalid;
     end
   end
+
+  // Check that the FSM is linear and does not contain any loops
+  `ASSERT_FPV_LINEAR_FSM(SecCmCFILinear_A, state_q, fsm_state_e)
 
   // The in_state_done signal is supposed to be true iff we're in FSM state Done. Grabbing just the
   // bottom 4 bits of state_q is equivalent to "mubi4_bool_to_mubi(state_q == Done)" except that it

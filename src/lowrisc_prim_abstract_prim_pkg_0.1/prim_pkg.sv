@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -10,6 +10,9 @@ package prim_pkg;
 
   // Implementation target specialization
   typedef enum integer {
-    ImplGeneric
+    ImplGeneric,
+    ImplBadbit,
+    ImplXilinx_ultrascale,
+    ImplXilinx
   } impl_e;
 endpackage : prim_pkg

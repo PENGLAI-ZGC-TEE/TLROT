@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -72,8 +72,7 @@ module csrng
     .tl_o,
     .reg2hw,
     .hw2reg,
-    .intg_err_o(intg_err_alert[1]),
-    .devmode_i(1'b1)
+    .intg_err_o(intg_err_alert[1])
   );
 
   csrng_core #(

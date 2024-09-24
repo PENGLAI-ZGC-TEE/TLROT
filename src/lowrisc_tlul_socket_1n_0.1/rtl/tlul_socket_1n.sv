@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -118,7 +118,6 @@ module tlul_socket_1n #(
       dev_select_outstanding <= '0;
     end else if (accept_t_req) begin
       if (!accept_t_rsp) begin
-        `ASSERT_I(NotOverflowed_A, num_req_outstanding <= MaxOutstanding)
         num_req_outstanding <= num_req_outstanding + 1'b1;
       end
       dev_select_outstanding <= dev_select_t;
@@ -126,6 +125,9 @@ module tlul_socket_1n #(
       num_req_outstanding <= num_req_outstanding - 1'b1;
     end
   end
+
+  `ASSERT(NotOverflowed_A,
+          accept_t_req && !accept_t_rsp -> num_req_outstanding <= MaxOutstanding)
 
   assign hold_all_requests =
       (num_req_outstanding != '0) &

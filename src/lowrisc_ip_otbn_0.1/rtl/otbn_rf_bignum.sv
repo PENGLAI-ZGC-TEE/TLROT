@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -161,12 +161,9 @@ module otbn_rf_bignum
   end
 
   logic intg_err_unbuf, intg_err_buf;
-  
-  //zdr ecc disable
-  logic intg_err_unbuf_zdr;
-  assign intg_err_unbuf_zdr = ((|rd_data_a_err) & rd_en_a_i) |
+
+  assign intg_err_unbuf = ((|rd_data_a_err) & rd_en_a_i) |
                           ((|rd_data_b_err) & rd_en_b_i);
-  assign intg_err_unbuf = intg_err_unbuf_zdr & 1'b0;
 
   // This primitive is used to place a constraint for synthesis. It is required to
   // ensure that the signal name will be available in the synthesized netlist.

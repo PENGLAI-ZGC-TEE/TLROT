@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -83,6 +83,9 @@ module otbn_instruction_fetch
   logic                     insn_prefetch;
   logic                     insn_prefetch_fail;
 
+  logic                     imem_rvalid_final;
+  logic                     imem_rvalid_kill_q, imem_rvalid_kill_d;
+
   rf_predec_bignum_t   rf_predec_bignum_indirect, rf_predec_bignum_sec_wipe;
   rf_predec_bignum_t   rf_predec_bignum_q, rf_predec_bignum_d, rf_predec_bignum_insn;
   alu_predec_bignum_t  alu_predec_bignum_zero_flags;
@@ -101,15 +104,19 @@ module otbn_instruction_fetch
 
   logic [NWdr-1:0] rf_bignum_wr_sec_wipe_onehot;
 
+  assign imem_rvalid_final = imem_rvalid_i & ~imem_rvalid_kill_q;
+
   // The prefetch has failed if a fetch is requested and either no prefetch has done or was done to
-  // the wrong address.
-  assign insn_prefetch_fail = insn_fetch_req_valid_i &
-                              (~imem_rvalid_i || (insn_fetch_req_addr_i != insn_prefetch_addr));
+  // the wrong address. The `insn_fetch_req_valid_raw_i` signal doesn't factor in errors which is
+  // important to avoid timing issues here as this signal factors into the muxing for the
+  // imem_addr_o output.
+  assign insn_prefetch_fail = insn_fetch_req_valid_raw_i &
+                              (~imem_rvalid_final || (insn_fetch_req_addr_i != insn_prefetch_addr));
 
   // Fetch response is valid when prefetch has matched what was requested. Otherwise if no fetch is
   // requested keep fetch response validity constant unless a clear is commanded.
   assign insn_fetch_resp_valid_d =
-    insn_fetch_req_valid_i ? imem_rvalid_i & (insn_fetch_req_addr_i == insn_prefetch_addr) :
+    insn_fetch_req_valid_i ? imem_rvalid_final & (insn_fetch_req_addr_i == insn_prefetch_addr) :
                              insn_fetch_resp_valid_q & ~insn_fetch_resp_clear_i;
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
@@ -129,7 +136,7 @@ module otbn_instruction_fetch
 
     .imem_rdata_i (imem_rdata_i[31:0]),
     .imem_raddr_i (insn_prefetch_addr),
-    .imem_rvalid_i,
+    .imem_rvalid_i(imem_rvalid_final),
 
     .rf_predec_bignum_o        (rf_predec_bignum_insn),
     .alu_predec_bignum_o       (alu_predec_bignum_insn),
@@ -176,7 +183,7 @@ module otbn_instruction_fetch
                                 insn_fetch_resp_clear_i ? 1'b0:
                                                           lsu_addr_en_predec_q;
 
-  assign insn_fetch_en = imem_rvalid_i & insn_fetch_req_valid_i;
+  assign insn_fetch_en = imem_rvalid_final & insn_fetch_req_valid_i;
 
   assign insn_fetch_resp_data_intg_d = insn_fetch_en ? imem_rdata_i :
                                                        insn_fetch_resp_data_intg_q;
@@ -310,28 +317,60 @@ module otbn_instruction_fetch
 
   // Prefetch control
   always_comb begin
-    // Only prefetch if controller tells us to
-    insn_prefetch = prefetch_en_i;
     // By default prefetch the next instruction
     imem_addr_o = insn_prefetch_addr + 'd4;
+    // The kill is flopped and applied to imem_rvalid the following cycle. It's used for branching.
+    imem_rvalid_kill_d = 1'b0;
+    // Only prefetch if controller tells us to
+    insn_prefetch = prefetch_en_i;
 
-    if (!insn_fetch_req_valid_i) begin
+    // Use the `insn_fetch_req_valid_raw_i` signal here as it doesn't factor in errors. This is
+    // important for timing reasons so errors don't factor into the `imem_addr_o` signal.
+    if (!insn_fetch_req_valid_raw_i) begin
       // Keep prefetching the same instruction when a new one isn't being requested. In this
       // scenario OTBN is stalled and will eventually want the prefetched instruction.
       imem_addr_o = insn_prefetch_addr;
     end else if (insn_prefetch_fail) begin
       // When prefetching has failed prefetch the requested address
       imem_addr_o = insn_fetch_req_addr_i;
-    end else if (insn_is_branch(imem_rdata_i[31:0])) begin
-      // For a branch we do not know if it will be taken or untaken. So never prefetch to keep
-      // timing consistent regardless of taken/not-taken.
-      // This also applies to jumps, this avoids the need to calculate the jump address here.
-      insn_prefetch = 1'b0;
-    end else if ({1'b0, insn_prefetch_addr} == prefetch_loop_end_addr_i &&
-                 prefetch_loop_active_i &&
-                 prefetch_loop_iterations_i > 32'd1) begin
-      // When in a loop prefetch the loop beginning when execution reaches the end.
-      imem_addr_o = prefetch_loop_jump_addr_i;
+    end else begin
+      if ({1'b0, insn_prefetch_addr} == prefetch_loop_end_addr_i &&
+          prefetch_loop_active_i &&
+          prefetch_loop_iterations_i > 32'd1) begin
+        // When in a loop prefetch the loop beginning when execution reaches the end.
+        imem_addr_o = prefetch_loop_jump_addr_i;
+      end
+
+      // It is important this if doesn't take priority over others in this block. If it does then
+      // when `imem_rdata_i` is unknown `imem_addr_o` becomes unknown when running a simulation that
+      // propagates X through if. In hardware terms this means there isn't a combinational path from
+      // `imem_rdata_i` and `imem_addr_o`. This may be useful for timing purposes as well.
+      if (insn_is_branch(imem_rdata_i[31:0])) begin
+        // For a branch we do not know if it will be taken or untaken. So never prefetch to keep
+        // timing consistent regardless of taken/not-taken. This also applies to jumps, this avoids
+        // the need to calculate the jump address here.
+        //
+        // For x-prop reasons we do not suppress the imem_req_o here. When OTBN executes an
+        // instruction that produces a software error it comes to an immediate halt. However only
+        // the raw fetch request is considered here for timing reasons. So if the instruction
+        // following the error causing instruction is X in simulation the `insn_is_branch` sees an
+        // X here which would result in imem_req_o going X (using simulator options that enable
+        // X prop for if statements). This is turn causes an assertion failure.
+        //
+        // The imem_rvalid_kill signal is used to avoid the X prop issue. This suppresses the
+        // imem_rvalid signal the following cycle. Whilst imem_rvalid_kill itself will go X if
+        // imem_rdata_i is X, as OTBN has halted following the error this doesn't cause a problem.
+        imem_rvalid_kill_d = 1'b1;
+        insn_prefetch      = 1'b0;
+      end
+    end
+  end
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      imem_rvalid_kill_q <= 1'b0;
+    end else begin
+      imem_rvalid_kill_q <= imem_rvalid_kill_d;
     end
   end
 
@@ -344,16 +383,15 @@ module otbn_instruction_fetch
     .err_o     (insn_fetch_resp_intg_error_vec)
   );
 
-  assign imem_req_o = insn_prefetch;
+  // Read from imem when prefetching is enabled
+  assign imem_req_o = prefetch_en_i;
 
   assign insn_fetch_resp_valid_o = insn_fetch_resp_valid_q;
   assign insn_fetch_resp_addr_o  = insn_fetch_resp_addr_q;
   // Strip integrity bits before passing instruction to decoder
   assign insn_fetch_resp_data_o  = insn_fetch_resp_data_intg_q[31:0];
 
-  // zdr: otbn ecc disable
-  assign insn_fetch_err_o = (|insn_fetch_resp_intg_error_vec & insn_fetch_resp_valid_q) & 1'b0;
-  // assign insn_fetch_err_o = |insn_fetch_resp_intg_error_vec & insn_fetch_resp_valid_q;
+  assign insn_fetch_err_o = |insn_fetch_resp_intg_error_vec & insn_fetch_resp_valid_q;
 
   // SEC_CM: PC.CTRL_FLOW.REDUN
   // Signal an `insn_addr_err` if the instruction the execute stage requests is not the one that was
@@ -361,7 +399,7 @@ module otbn_instruction_fetch
   // here indicates a fault.  `insn_fetch_req_valid_raw_i` is used as it doesn't factor in errors,
   // which is required here otherwise we get a combinational loop.
   assign insn_addr_err_unbuf =
-    imem_rvalid_i & insn_fetch_req_valid_raw_i & ~prefetch_ignore_errs_i &
+    imem_rvalid_final & insn_fetch_req_valid_raw_i & ~prefetch_ignore_errs_i &
     (insn_fetch_req_addr_i != insn_prefetch_addr);
 
   prim_buf #(.Width(1)) u_insn_addr_buf (

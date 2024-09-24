@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -76,20 +76,6 @@ package tlul_pkg;
     logic                         d_ready;
   } tl_h2d_t;
 
-  typedef struct packed {
-    logic                         a_valid;
-    tl_a_op_e                     a_opcode;
-    logic                  [2:0]  a_param;
-    logic  [top_pkg::TL_SZW64-1:0]  a_size;
-    logic  [top_pkg::TL_AIW-1:0]  a_source;
-    logic   [top_pkg::TL_AW-1:0]  a_address;
-    logic  [top_pkg::TL_DBW64-1:0]  a_mask;
-    logic   [top_pkg::TL_DW64-1:0]  a_data;
-    tl_a_user_t                   a_user;
-
-    logic                         d_ready;
-  } tl_h2d_t64;
-
   // The choice of all 1's as the blanked value is deliberate.
   // It is assumed that most security features of the design are opt-in instead
   // of opt-out.
@@ -130,21 +116,6 @@ package tlul_pkg;
     logic                         a_ready;
 
   } tl_d2h_t;
-
-  typedef struct packed {
-    logic                         d_valid;
-    tl_d_op_e                     d_opcode;
-    logic                  [2:0]  d_param;
-    logic  [top_pkg::TL_SZW64-1:0]  d_size;   // Bouncing back a_size
-    logic  [top_pkg::TL_AIW-1:0]  d_source;
-    logic  [top_pkg::TL_DIW-1:0]  d_sink;
-    logic   [top_pkg::TL_DW64-1:0]  d_data;
-    tl_d_user_t                   d_user;
-    logic                         d_error;
-
-    logic                         a_ready;
-
-  } tl_d2h_t64;
 
   typedef struct packed {
     tl_d_op_e                     opcode;

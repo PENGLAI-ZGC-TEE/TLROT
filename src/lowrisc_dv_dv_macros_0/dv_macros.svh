@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -360,14 +360,13 @@
   `define GET_PARITY(val, odd=0) (^val ^ odd)
 `endif
 
-// Wait a task or statement with exit condition
-// Kill the thread when either the wait statement is completed or exit condition occurs
-// input WAIT_ need to be a statement. Here are some examples
-// `DV_SPINWAIT(wait(...);, "Wait for ...")
-// `DV_SPINWAIT(
-//              while (1) begin
-//                ...
-//              end)
+// Wait for a statement but stop early if the EXIT statement completes.
+//
+// Example usage:
+//
+//    `DV_SPINWAIT_EXIT(do_something_time_consuming();,
+//                      wait(stop_now_flag);,
+//                      "The stop flag was set when we were working")
 `ifndef DV_SPINWAIT_EXIT
 `define DV_SPINWAIT_EXIT(WAIT_, EXIT_, MSG_ = "exit condition occurred!", ID_ =`gfn) \
   begin \
@@ -398,7 +397,7 @@
   end
 `endif
 
-// wait a task or statement with timer watchdog
+// Wait for a statement, but exit early after a timeout
 `ifndef DV_SPINWAIT
 `define DV_SPINWAIT(WAIT_, MSG_ = "timeout occurred!", TIMEOUT_NS_ = default_spinwait_timeout_ns, ID_ =`gfn) \
   `DV_SPINWAIT_EXIT(WAIT_, `DV_WAIT_TIMEOUT(TIMEOUT_NS_, ID_, MSG_);, "", ID_)
@@ -610,7 +609,7 @@
 //
 // If there is a need to sample / force an internal signal, then it must be done in the testbench,
 // or in an interface bound to the DUT. This macro creates a standardized signal probe function
-// meant to be invoked an interface. The generated function can then be invoked in test sequences
+// to be defined in an interface. The generated function can then be invoked in test sequences
 // or other UVM classes. The macro takes 2 arguments - name of the function and the hierarchical
 // path to the signal. If invoked in an interface which is bound to the DUT, the signal can be a
 // partial hierarchical path within the DUT. The generated function accepts 2 arguments - the first
@@ -642,6 +641,6 @@
 // Do not leave this macro in other source files in the remote repo.
 `ifndef OTDBG
   `define OTDBG(x) \
-  $write($sformatf("%t:OTDBG:",$time));\
+  $write($sformatf("%t:OTDBG:%s:%d:",$time,`__FILE__, `__LINE__));\
   $display($sformatf x);
 `endif

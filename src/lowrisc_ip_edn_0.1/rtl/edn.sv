@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -57,8 +57,7 @@ module edn
     .tl_o,
     .reg2hw,
     .hw2reg,
-    .intg_err_o(intg_err_alert[1]), // Assign this alert to the fatal alert index.
-    .devmode_i(1'b1)
+    .intg_err_o(intg_err_alert[1]) // Assign this alert to the fatal alert index.
   );
 
   edn_core #(
@@ -118,13 +117,16 @@ module edn
   for (genvar i = 0; i < NumEndPoints; i = i+1) begin : gen_edn_if_asserts
     `ASSERT_KNOWN(EdnEndPointOut_A, edn_o[i])
 
-    // These assertions check that EDN data will be stable from edn_ack until the next EDN request
-    // or until next EDN enablement.
-    `ASSERT(EdnDataStable_A, $rose(edn_o[i].edn_ack) |=>
-            $stable(edn_o[i].edn_bus) throughout edn_i[i].edn_req[->1],
-            clk_i, !rst_ni || !u_edn_core.edn_enable_q)
+    // Check that EDN data stays stable from edn_ack until the next EDN request or until EDN
+    // disablement.
+    `ASSERT(EdnDataStable_A,
+        ($rose(edn_o[i].edn_ack) && $past(|u_edn_core.edn_enable_fo)) |=>
+            $stable(edn_o[i].edn_bus) throughout
+            (edn_i[i].edn_req || !(|u_edn_core.edn_enable_fo))[->1])
 
-    `ASSERT(EdnDataStableDisable_A, u_edn_core.edn_enable_q == 0 |=> $stable(edn_o[i].edn_bus))
+    // Check that EDN data stays stable while EDN is disabled.
+    `ASSERT(EdnDataStableDisable_A,
+        !(|u_edn_core.edn_enable_fo) |=> ##1 $stable(edn_o[i].edn_bus))
 
     `ASSERT(EdnFatalAlertNoRsp_A, alert[1] |-> edn_o[i].edn_ack == 0)
   end : gen_edn_if_asserts
@@ -151,6 +153,20 @@ module edn
       u_edn_core.gen_ep_blk[i].u_edn_ack_sm_ep.u_state_regs,
       alert_tx_o[1])
   end
+
+  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(ResCmdFifoWptrCheck_A,
+    u_edn_core.u_prim_fifo_sync_rescmd.gen_normal_fifo.u_fifo_cnt.gen_secure_ptrs.u_wptr,
+    alert_tx_o[1])
+  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(ResCmdFifoRptrCheck_A,
+    u_edn_core.u_prim_fifo_sync_rescmd.gen_normal_fifo.u_fifo_cnt.gen_secure_ptrs.u_rptr,
+    alert_tx_o[1])
+
+  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(GenCmdFifoWptrCheck_A,
+    u_edn_core.u_prim_fifo_sync_gencmd.gen_normal_fifo.u_fifo_cnt.gen_secure_ptrs.u_wptr,
+    alert_tx_o[1])
+  `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(GenCmdFifoRptrCheck_A,
+    u_edn_core.u_prim_fifo_sync_gencmd.gen_normal_fifo.u_fifo_cnt.gen_secure_ptrs.u_rptr,
+    alert_tx_o[1])
 
   // Alert assertions for reg_we onehot check
   `ASSERT_PRIM_REG_WE_ONEHOT_ERROR_TRIGGER_ALERT(RegWeOnehotCheck_A, u_reg, alert_tx_o[1])

@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -21,23 +21,23 @@ package rs_decode_reg_pkg;
     struct packed {
       logic        q;
       logic        qe;
-    } decode_en;
+    } clrn;
     struct packed {
       logic        q;
       logic        qe;
-    } clrn;
+    } decode_en;
   } rs_decode_reg2hw_ctrl_signals_reg_t;
 
   typedef struct packed {
     struct packed {
       logic        q;
-    } output_valid_bit;
+    } with_error_bit;
     struct packed {
       logic        q;
     } ready_bit;
     struct packed {
       logic        q;
-    } with_error_bit;
+    } output_valid_bit;
   } rs_decode_reg2hw_state_signals_reg_t;
 
   typedef struct packed {
@@ -48,17 +48,6 @@ package rs_decode_reg_pkg;
   typedef struct packed {
     logic [31:0] q;
   } rs_decode_reg2hw_error_pos_out_mreg_t;
-
-  typedef struct packed {
-    struct packed {
-      logic        d;
-      logic        de;
-    } decode_en;
-    struct packed {
-      logic        d;
-      logic        de;
-    } clrn;
-  } rs_decode_hw2reg_ctrl_signals_reg_t;
 
   typedef struct packed {
     struct packed {
@@ -78,11 +67,6 @@ package rs_decode_reg_pkg;
   typedef struct packed {
     logic [31:0] d;
     logic        de;
-  } rs_decode_hw2reg_encoded_data_in_mreg_t;
-
-  typedef struct packed {
-    logic [31:0] d;
-    logic        de;
   } rs_decode_hw2reg_error_pos_out_mreg_t;
 
   // Register -> HW type
@@ -95,9 +79,7 @@ package rs_decode_reg_pkg;
 
   // HW -> register type
   typedef struct packed {
-    rs_decode_hw2reg_ctrl_signals_reg_t ctrl_signals; // [3309:3306]
-    rs_decode_hw2reg_state_signals_reg_t state_signals; // [3305:3300]
-    rs_decode_hw2reg_encoded_data_in_mreg_t [49:0] encoded_data_in; // [3299:1650]
+    rs_decode_hw2reg_state_signals_reg_t state_signals; // [1655:1650]
     rs_decode_hw2reg_error_pos_out_mreg_t [49:0] error_pos_out; // [1649:0]
   } rs_decode_hw2reg_t;
 
@@ -418,3 +400,4 @@ package rs_decode_reg_pkg;
   };
 
 endpackage
+

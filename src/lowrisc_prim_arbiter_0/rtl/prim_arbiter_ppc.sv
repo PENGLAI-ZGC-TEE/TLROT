@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -33,9 +33,7 @@ module prim_arbiter_ppc #(
   parameter bit EnDataPort = 1,
 
   // Derived parameters
-  // localparam int IdxW = $clog2(N)
-  // localparam int IdxW = 1
-  parameter int IdxW = 1
+  localparam int IdxW = $clog2(N)
 ) (
   input clk_i,
   input rst_ni,
@@ -179,7 +177,7 @@ end
 // FPV-only assertions with symbolic variables
 `ifdef FPV_ON
   // symbolic variables
-  int unsigned k;
+  bit [IdxW-1:0] k;
   bit ReadyIsStable;
   bit ReqsAreStable;
 

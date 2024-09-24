@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -21,20 +21,20 @@ package rs_encode_reg_pkg;
     struct packed {
       logic        q;
       logic        qe;
-    } encode_en;
+    } clrn;
     struct packed {
       logic        q;
       logic        qe;
-    } clrn;
+    } encode_en;
   } rs_encode_reg2hw_ctrl_signals_reg_t;
 
   typedef struct packed {
     struct packed {
       logic        q;
-    } valid_bit;
+    } ready_bit;
     struct packed {
       logic        q;
-    } ready_bit;
+    } valid_bit;
   } rs_encode_reg2hw_state_signals_reg_t;
 
   typedef struct packed {
@@ -50,28 +50,12 @@ package rs_encode_reg_pkg;
     struct packed {
       logic        d;
       logic        de;
-    } encode_en;
-    struct packed {
-      logic        d;
-      logic        de;
-    } clrn;
-  } rs_encode_hw2reg_ctrl_signals_reg_t;
-
-  typedef struct packed {
-    struct packed {
-      logic        d;
-      logic        de;
     } valid_bit;
     struct packed {
       logic        d;
       logic        de;
     } ready_bit;
   } rs_encode_hw2reg_state_signals_reg_t;
-
-  typedef struct packed {
-    logic [31:0] d;
-    logic        de;
-  } rs_encode_hw2reg_data_in_mreg_t;
 
   typedef struct packed {
     logic [31:0] d;
@@ -88,9 +72,7 @@ package rs_encode_reg_pkg;
 
   // HW -> register type
   typedef struct packed {
-    rs_encode_hw2reg_ctrl_signals_reg_t ctrl_signals; // [3043:3040]
-    rs_encode_hw2reg_state_signals_reg_t state_signals; // [3039:3036]
-    rs_encode_hw2reg_data_in_mreg_t [41:0] data_in; // [3035:1650]
+    rs_encode_hw2reg_state_signals_reg_t state_signals; // [1653:1650]
     rs_encode_hw2reg_encoded_data_out_mreg_t [49:0] encoded_data_out; // [1649:0]
   } rs_encode_hw2reg_t;
 
@@ -387,3 +369,4 @@ package rs_encode_reg_pkg;
   };
 
 endpackage
+

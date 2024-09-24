@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -66,6 +66,7 @@ module keymgr_ctrl
 
   // prng control interface
   input [Shares-1:0][RandWidth-1:0] entropy_i,
+  input prng_reseed_done_i,
   input prng_reseed_ack_i,
   output logic prng_reseed_req_o,
   output logic prng_en_o
@@ -234,7 +235,24 @@ module keymgr_ctrl
   //  interaction between main fsm and prng
   ///////////////////////////
 
-  assign prng_en_o = random_req | disabled | invalid | wipe_req;
+  // Upon entering StCtrlDisabled or StCtrlInvalid, the PRNG is kept advancing until it has been
+  // reseeded twice (through the reseeding mechansism inside keymgr_reseed_ctrl.sv).
+  logic [1:0] prng_en_dis_inv_d, prng_en_dis_inv_q;
+  logic prng_en_dis_inv_set;
+
+  assign prng_en_dis_inv_d =
+      prng_en_dis_inv_set ? 2'b11 :
+      prng_reseed_done_i  ? {1'b0, prng_en_dis_inv_q[1]} : prng_en_dis_inv_q;
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      prng_en_dis_inv_q <= '0;
+    end else begin
+      prng_en_dis_inv_q <= prng_en_dis_inv_d;
+    end
+  end
+
+  assign prng_en_o = random_req | wipe_req | prng_en_dis_inv_q[0];
 
   //////////////////////////
   // Main Control FSM
@@ -300,6 +318,13 @@ module keymgr_ctrl
     end
   end
 
+  // These are consumed one level above in keymgr.sv
+  logic unused_otp_sigs;
+  assign unused_otp_sigs = ^{root_key_i.creator_seed,
+                             root_key_i.creator_seed_valid,
+                             root_key_i.owner_seed,
+                             root_key_i.owner_seed_valid};
+
   // root key valid sync
   logic root_key_valid_q;
 
@@ -308,7 +333,11 @@ module keymgr_ctrl
   ) u_key_valid_sync (
     .clk_i,
     .rst_ni,
-    .d_i(root_key_i.valid),
+    // Both valid signals are flopped in OTP_CTRL, and they only ever transition from 0 -> 1.
+    // It is hence ok to AND them here before the synchronizer, since we don't expect this
+    // to create glitches.
+    .d_i(root_key_i.creator_root_key_share0_valid &&
+         root_key_i.creator_root_key_share1_valid),
     .q_o(root_key_valid_q)
   );
 
@@ -338,10 +367,11 @@ module keymgr_ctrl
         if (root_key_valid_q) begin
           for (int i = 0; i < CDIs; i++) begin
             if (KmacEnMasking) begin : gen_two_share_key
-              key_state_d[i][0] ^= root_key_i.key_share0;
-              key_state_d[i][1] ^= root_key_i.key_share1;
+              key_state_d[i][0] ^= root_key_i.creator_root_key_share0;
+              key_state_d[i][1] ^= root_key_i.creator_root_key_share1;
             end else begin : gen_one_share_key
-              key_state_d[i][0] = root_key_i.key_share0 ^ root_key_i.key_share1;
+              key_state_d[i][0] = root_key_i.creator_root_key_share0 ^
+                                  root_key_i.creator_root_key_share1;
               key_state_d[i][1] = '0;
             end
           end
@@ -384,8 +414,9 @@ module keymgr_ctrl
     .incr_en_i(op_update | random_req),
     .decr_en_i(1'b0),
     .step_i(CntWidth'(1'b1)),
+    .commit_i(1'b1),
     .cnt_o(cnt),
-    .cnt_next_o(),
+    .cnt_after_commit_o(),
     .err_o(cnt_err)
   );
 
@@ -443,7 +474,10 @@ module keymgr_ctrl
     // indication that state is invalid
     invalid = 1'b0;
 
-    // enable prng toggling
+    // Don't request final PRNG updating and reseeding.
+    prng_en_dis_inv_set = 1'b0;
+
+    // Request PRNG reseeding.
     prng_reseed_req_o = 1'b0;
 
     // initialization complete
@@ -505,7 +539,7 @@ module keymgr_ctrl
       StCtrlRootKey: begin
         init_o = 1'b1;
         initialized = 1'b1;
-        state_d = en_i ? StCtrlInit : StCtrlWipe;
+        state_d = (en_i && root_key_valid_q) ? StCtrlInit : StCtrlWipe;
       end
 
       // Beginning from the Init state, operations are accepted.
@@ -522,6 +556,7 @@ module keymgr_ctrl
           state_d = StCtrlWipe;
         end else if (dis_state) begin
           state_d = StCtrlDisabled;
+          prng_en_dis_inv_set = 1'b1;
         end else if (adv_state) begin
           state_d = StCtrlCreatorRootKey;
         end
@@ -541,6 +576,7 @@ module keymgr_ctrl
           state_d = StCtrlWipe;
         end else if (dis_state) begin
           state_d = StCtrlDisabled;
+          prng_en_dis_inv_set = 1'b1;
         end else if (adv_state) begin
           state_d = StCtrlOwnerIntKey;
         end
@@ -560,6 +596,7 @@ module keymgr_ctrl
           state_d = StCtrlWipe;
         end else if (dis_state) begin
           state_d = StCtrlDisabled;
+          prng_en_dis_inv_set = 1'b1;
         end else if (adv_state) begin
           state_d = StCtrlOwnerKey;
         end
@@ -579,6 +616,7 @@ module keymgr_ctrl
           state_d = StCtrlWipe;
         end else if (adv_state || dis_state) begin
           state_d = StCtrlDisabled;
+          prng_en_dis_inv_set = 1'b1;
         end
       end
 
@@ -601,6 +639,7 @@ module keymgr_ctrl
         //    begin with (op_start_i == 0), in this case, don't wait and immediately transition
         if (!op_start_i) begin
           state_d = StCtrlInvalid;
+          prng_en_dis_inv_set = 1'b1;
         end
       end
 
@@ -620,7 +659,7 @@ module keymgr_ctrl
       end
 
       StCtrlInvalid: begin
-        op_req = op_start_i;
+        invalid_op = op_start_i;
         invalid = 1'b1;
       end
 

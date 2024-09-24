@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -83,6 +83,8 @@ module kmac_errchk
 
   // Error processed indicator
   input err_processed_i,
+
+  input prim_mubi_pkg::mubi4_t clear_after_error_i,
 
   output err_t error_o,
   output logic sparse_fsm_error_o
@@ -448,8 +450,13 @@ module kmac_errchk
     // SEC_CM: FSM.GLOBAL_ESC, FSM.LOCAL_ESC
     // Unconditionally jump into the terminal error state
     // if the life cycle controller triggers an escalation.
-    if (lc_escalate_en_i != lc_ctrl_pkg::Off) begin
+    if (lc_ctrl_pkg::lc_tx_test_true_loose(lc_escalate_en_i)) begin
       st_d = StTerminalError;
+    end
+
+    if (st_d != StTerminalError &&
+        prim_mubi_pkg::mubi4_test_true_strict(clear_after_error_i)) begin
+      st_d = StIdle;
     end
   end : next_state
   `ASSERT_KNOWN(StKnown_A, st)

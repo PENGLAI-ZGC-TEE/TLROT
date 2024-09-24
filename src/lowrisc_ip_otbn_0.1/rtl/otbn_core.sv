@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -146,6 +146,7 @@ module otbn_core
   logic [31:0]              rf_base_wr_data_no_intg_ctrl;
   logic [BaseIntgWidth-1:0] rf_base_wr_data_intg;
   logic                     rf_base_wr_data_intg_sel, rf_base_wr_data_intg_sel_ctrl;
+  logic                     rf_base_wr_sec_wipe_err;
   logic [4:0]               rf_base_rd_addr_a;
   logic                     rf_base_rd_en_a;
   logic [BaseIntgWidth-1:0] rf_base_rd_data_a_intg;
@@ -157,6 +158,7 @@ module otbn_core
   logic                     rf_base_call_stack_hw_err;
   logic                     rf_base_intg_err;
   logic                     rf_base_spurious_we_err;
+  logic                     rf_base_sec_wipe_err;
 
   alu_base_operation_t  alu_base_operation;
   alu_base_comparison_t alu_base_comparison;
@@ -185,6 +187,7 @@ module otbn_core
   logic [WLEN-1:0]    rf_bignum_wr_data_no_intg_ctrl;
   logic [ExtWLEN-1:0] rf_bignum_wr_data_intg;
   logic               rf_bignum_wr_data_intg_sel, rf_bignum_wr_data_intg_sel_ctrl;
+  logic               rf_bignum_wr_sec_wipe_err;
   logic [WdrAw-1:0]   rf_bignum_rd_addr_a;
   logic               rf_bignum_rd_en_a;
   logic [ExtWLEN-1:0] rf_bignum_rd_data_a_intg;
@@ -200,6 +203,7 @@ module otbn_core
   logic [WLEN-1:0]       alu_bignum_operation_result;
   logic                  alu_bignum_selection_flag;
   logic                  alu_bignum_reg_intg_violation_err;
+  logic                  alu_bignum_sec_wipe_err;
 
   mac_bignum_operation_t mac_bignum_operation;
   logic [WLEN-1:0]       mac_bignum_operation_result;
@@ -208,6 +212,7 @@ module otbn_core
   logic                  mac_bignum_en;
   logic                  mac_bignum_commit;
   logic                  mac_bignum_reg_intg_violation_err;
+  logic                  mac_bignum_sec_wipe_err;
 
   ispr_e                       ispr_addr;
   logic [31:0]                 ispr_base_wdata;
@@ -241,6 +246,7 @@ module otbn_core
   logic        controller_start;
 
   logic        state_reset;
+  logic        insn_cnt_clear_int;
   logic [31:0] insn_cnt;
 
   logic secure_wipe_req, secure_wipe_ack;
@@ -254,6 +260,7 @@ module otbn_core
   logic sec_wipe_acc_urnd;
   logic sec_wipe_mod_urnd;
   logic sec_wipe_zero;
+  logic sec_wipe_err;
 
   logic zero_flags;
 
@@ -314,9 +321,10 @@ module otbn_core
     .sec_wipe_mod_urnd_o(sec_wipe_mod_urnd),
     .sec_wipe_zero_o    (sec_wipe_zero),
 
-    .ispr_init_o  (ispr_init),
-    .state_reset_o(state_reset),
-    .fatal_error_o(start_stop_fatal_error)
+    .ispr_init_o         (ispr_init),
+    .state_reset_o       (state_reset),
+    .insn_cnt_clear_int_o(insn_cnt_clear_int),
+    .fatal_error_o       (start_stop_fatal_error)
   );
 
   // Depending on its usage, the instruction address (program counter) is qualified by two valid
@@ -413,6 +421,12 @@ module otbn_core
      rf_bignum_predec_error                                                                      |
      ispr_predec_error                                                                           |
      rd_predec_error;
+
+  assign sec_wipe_err = |{rf_base_wr_sec_wipe_err,
+                          rf_base_sec_wipe_err,
+                          rf_bignum_wr_sec_wipe_err,
+                          alu_bignum_sec_wipe_err,
+                          mac_bignum_sec_wipe_err};
 
   // Controller: coordinate between functional units, prepare their inputs (e.g. by muxing between
   // operand sources), and post-process their outputs as needed.
@@ -542,10 +556,12 @@ module otbn_core
     .secure_wipe_ack_i     (secure_wipe_ack),
     .sec_wipe_zero_i       (sec_wipe_zero),
     .secure_wipe_running_i (secure_wipe_running_o),
+    .sec_wipe_err_i        (sec_wipe_err),
 
-    .state_reset_i(state_reset),
-    .insn_cnt_o   (insn_cnt),
-    .insn_cnt_clear_i,
+    .state_reset_i       (state_reset),
+    .insn_cnt_o          (insn_cnt),
+    .insn_cnt_clear_int_i(insn_cnt_clear_int),
+    .insn_cnt_clear_ext_i(insn_cnt_clear_i),
     .mems_sec_wipe_o,
 
     .software_errs_fatal_i,
@@ -681,6 +697,7 @@ module otbn_core
 
     .state_reset_i         (state_reset),
     .sec_wipe_stack_reset_i(sec_wipe_zero),
+    .sec_wipe_running_i    (secure_wipe_running_o),
 
     .wr_addr_i         (rf_base_wr_addr),
     .wr_en_i           (rf_base_wr_en),
@@ -700,7 +717,8 @@ module otbn_core
     .call_stack_sw_err_o(rf_base_call_stack_sw_err),
     .call_stack_hw_err_o(rf_base_call_stack_hw_err),
     .intg_err_o         (rf_base_intg_err),
-    .spurious_we_err_o  (rf_base_spurious_we_err)
+    .spurious_we_err_o  (rf_base_spurious_we_err),
+    .sec_wipe_err_o     (rf_base_sec_wipe_err)
   );
 
   assign rf_base_wr_addr         = sec_wipe_base ? sec_wipe_addr : rf_base_wr_addr_ctrl;
@@ -722,6 +740,8 @@ module otbn_core
       rf_base_wr_data_intg_sel = rf_base_wr_data_intg_sel_ctrl;
     end
   end
+
+  assign rf_base_wr_sec_wipe_err = sec_wipe_base & ~secure_wipe_running_o;
 
   otbn_alu_base u_otbn_alu_base (
     .clk_i,
@@ -796,6 +816,8 @@ module otbn_core
     end
   end
 
+  assign rf_bignum_wr_sec_wipe_err = sec_wipe_wdr_q & ~secure_wipe_running_o;
+
   otbn_alu_bignum u_otbn_alu_bignum (
     .clk_i,
     .rst_ni,
@@ -827,6 +849,8 @@ module otbn_core
     .reg_intg_violation_err_o(alu_bignum_reg_intg_violation_err),
 
     .sec_wipe_mod_urnd_i(sec_wipe_mod_urnd),
+    .sec_wipe_running_i (secure_wipe_running_o),
+    .sec_wipe_err_o     (alu_bignum_sec_wipe_err),
 
     .mac_operation_flags_i   (mac_bignum_operation_flags),
     .mac_operation_flags_en_i(mac_bignum_operation_flags_en),
@@ -855,6 +879,8 @@ module otbn_core
 
     .urnd_data_i        (urnd_data),
     .sec_wipe_acc_urnd_i(sec_wipe_acc_urnd),
+    .sec_wipe_running_i (secure_wipe_running_o),
+    .sec_wipe_err_o     (mac_bignum_sec_wipe_err),
 
     .mac_en_i    (mac_bignum_en),
     .mac_commit_i(mac_bignum_commit),
@@ -956,17 +982,18 @@ module otbn_core
           mubi4_test_true_loose(start_stop_escalate_en) && mubi4_test_false_strict(escalate_en_i)
           |=> err_bits_q)
 
-  // The following assertions allow up to 400 cycles from escalation until the start/stop FSM locks.
-  // This is a long time, but it's necessary because following an escalation the start/stop FSM goes
-  // through two rounds of secure wiping with random data with an URND reseed in between.  Depending
-  // on the delay configured in the EDN model, the reseed alone can take 200 cycles.
+  // The following assertions allow up to 4000 cycles from escalation until the start/stop FSM
+  // locks. This is to allow the core to do a secure wipe (which involves waiting for data from the
+  // EDN) before it changes status. The long wait here won't mask problems because the logic of "ask
+  // for URND data" and "do the secure wipe once it arrives" is duplicated in the Python model,
+  // against which the RTL is checked.
 
   `ASSERT(OtbnStartStopGlobalEscCntrMeasure_A, err_bits_q && mubi4_test_true_loose(escalate_en_i)
-          && mubi4_test_true_loose(start_stop_escalate_en)|=> ##[1:400]
+          && mubi4_test_true_loose(start_stop_escalate_en)|=> ##[1:4000]
           u_otbn_start_stop_control.state_q == otbn_pkg::OtbnStartStopStateLocked)
 
   `ASSERT(OtbnStartStopLocalEscCntrMeasure_A, err_bits_q && mubi4_test_false_strict(escalate_en_i)
-          && mubi4_test_true_loose(start_stop_escalate_en) |=>  ##[1:400]
+          && mubi4_test_true_loose(start_stop_escalate_en) |=>  ##[1:4000]
           u_otbn_start_stop_control.state_q == otbn_pkg::OtbnStartStopStateLocked)
 
   // In contrast to the start/stop FSM, the controller FSM should lock quickly after an escalation,

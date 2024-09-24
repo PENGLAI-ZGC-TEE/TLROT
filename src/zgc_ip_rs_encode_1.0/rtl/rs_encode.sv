@@ -20,23 +20,11 @@ module rs_encode
     .rst_ni                            ( rst_ni          ),
     .tl_i                              ( tl_i            ),
     .hw2reg                            ( hw2reg          ),
-    .devmode_i                         ( 1'b1            ),
 
     .tl_o                              ( tl_o            ),
     .reg2hw                            ( reg2hw          ),
     .intg_err_o                        (                 )
 );
-
-assign hw2reg.ctrl_signals.clrn.de = 1'd0;
-assign hw2reg.ctrl_signals.encode_en.de = 1'd0;
-assign hw2reg.ctrl_signals.clrn.d = 1'd0;
-assign hw2reg.ctrl_signals.encode_en.d = 1'd0;
-always_comb begin
-  for (int i = 0; i < 42; i++) begin
-    hw2reg.data_in[i].de = 1'd0;
-    hw2reg.data_in[i].d = '0;
-  end
-end
 
 rs_encode_wrapper  u_rs_encode_wrapper (
     .clk                     ( clk_i                         ),

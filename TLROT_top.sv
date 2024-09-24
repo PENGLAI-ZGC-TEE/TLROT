@@ -66,7 +66,8 @@ module TLROT_top (
     output logic intr_entropy_src_es_observe_fifo_ready_o,
     output logic intr_entropy_src_es_fatal_err_o,
     output logic intr_edn0_edn_cmd_req_done_o,
-    output logic intr_edn0_edn_fatal_err_o
+    output logic intr_edn0_edn_fatal_err_o,
+    output logic intr_otbn_done
 );
 
 tlul_pkg::tl_h2d_t tl_i;

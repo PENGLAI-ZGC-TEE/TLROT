@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -38,6 +38,7 @@ module otbn_rf_base
 
   input  logic                     state_reset_i,
   input  logic                     sec_wipe_stack_reset_i,
+  input  logic                     sec_wipe_running_i,
 
   input  logic [4:0]               wr_addr_i,
   input  logic                     wr_en_i,
@@ -59,7 +60,8 @@ module otbn_rf_base
   output logic                     call_stack_sw_err_o,
   output logic                     call_stack_hw_err_o,
   output logic                     intg_err_o,
-  output logic                     spurious_we_err_o
+  output logic                     spurious_we_err_o,
+  output logic                     sec_wipe_err_o
 );
   localparam int unsigned CallStackRegIndex = 1;
   localparam int unsigned CallStackDepth = 8;
@@ -85,17 +87,23 @@ module otbn_rf_base
   logic push_stack_reqd;
   logic push_stack;
   logic push_stack_err;
+  logic rd_stack_a;
+  logic rd_stack_b;
 
   logic                     stack_full;
-  logic [BaseIntgWidth-1:0] stack_data_intg;
+  logic [BaseIntgWidth-1:0] stack_data_intg, stack_data_intg_raw;
   logic                     stack_data_valid;
 
   logic state_reset;
 
   assign state_reset = state_reset_i | sec_wipe_stack_reset_i;
 
-  assign pop_stack_a     = rd_en_a_i & (rd_addr_a_i == CallStackRegIndex[4:0]);
-  assign pop_stack_b     = rd_en_b_i & (rd_addr_b_i == CallStackRegIndex[4:0]);
+  // rd_stack_[a/b] indicates the RF addr will read from the call stack if enabled
+  assign rd_stack_a = rd_addr_a_i == CallStackRegIndex[4:0];
+  assign rd_stack_b = rd_addr_b_i == CallStackRegIndex[4:0];
+
+  assign pop_stack_a     = rd_en_a_i & rd_stack_a;
+  assign pop_stack_b     = rd_en_b_i & rd_stack_b;
   // pop_stack_reqd indicates a call stack pop is requested and pop_stack commands it to happen.
   assign pop_stack_reqd  = (pop_stack_a | pop_stack_b);
   assign pop_stack       = rd_commit_i & pop_stack_reqd;
@@ -119,9 +127,11 @@ module otbn_rf_base
 
   // SEC_CM: CALL_STACK.ADDR.INTEGRITY
   // Ignore read data from the register file if reading from the stack register,
-  // otherwise pass data through from register file.
-  assign rd_data_a_intg_o = pop_stack_a ? stack_data_intg : rd_data_a_raw_intg;
-  assign rd_data_b_intg_o = pop_stack_b ? stack_data_intg : rd_data_b_raw_intg;
+  // otherwise pass data through from register file. Mux selection here is based only on the
+  // relevant register port address to ease timing (the rd_en_[a|b]_i signals are too late in the
+  // cycle).
+  assign rd_data_a_intg_o = rd_stack_a ? stack_data_intg : rd_data_a_raw_intg;
+  assign rd_data_b_intg_o = rd_stack_b ? stack_data_intg : rd_data_b_raw_intg;
 
   prim_secded_inv_39_32_enc u_wr_data_intg_enc (
     .data_i(wr_data_no_intg_i),
@@ -149,7 +159,8 @@ module otbn_rf_base
     .push_data_i   (wr_data_intg_mux_out),
 
     .pop_i         (pop_stack),
-    .top_data_o    (stack_data_intg),
+    .commit_i      (1'b1),
+    .top_data_o    (stack_data_intg_raw),
     .top_valid_o   (stack_data_valid),
 
     .stack_wr_idx_o(),
@@ -160,6 +171,11 @@ module otbn_rf_base
     .next_top_data_o (),
     .next_top_valid_o()
   );
+
+  // Squash call stack read data to 0 (which means invalid ECC with the encoding we use) when
+  // there's nothing on the call stack. OTBN will raise an error when we read from an empty call
+  // stack but this prevents X propagation and exposing any previous, now invalid, stack values.
+  assign stack_data_intg = stack_data_valid ? stack_data_intg_raw : '0;
 
   if (RegFile == RegFileFF) begin : gen_rf_base_ff
     otbn_rf_base_ff #(
@@ -217,14 +233,13 @@ module otbn_rf_base
 
   // Suppress integrity error where the relevant read port saw a call stack pop error (so both
   // integrity and data are invalid).
-  // zdr ecc disable
-  // logic rd_data_a_err_zdr = (|rd_data_a_err) & 1'b0;
-  // logic rd_data_b_err_zdr = (|rd_data_b_err) & 1'b0;
-  assign intg_err_o = (|((|rd_data_a_err) & 1'b0) & rd_en_a_i & ~pop_stack_a_err) |
-                      (|((|rd_data_b_err) & 1'b0) & rd_en_b_i & ~pop_stack_b_err);
+  assign intg_err_o = (|rd_data_a_err & rd_en_a_i & ~pop_stack_a_err) |
+                      (|rd_data_b_err & rd_en_b_i & ~pop_stack_b_err);
 
   // Make sure we're not outputting X. This indicates that something went wrong during the initial
   // secure wipe.
   `ASSERT(OtbnRfBaseRdAKnown, rd_en_a_i && !pop_stack_a |-> !$isunknown(rd_data_a_raw_intg))
   `ASSERT(OtbnRfBaseRdBKnown, rd_en_b_i && !pop_stack_b |-> !$isunknown(rd_data_b_raw_intg))
+
+  assign sec_wipe_err_o = sec_wipe_stack_reset_i & ~sec_wipe_running_i;
 endmodule

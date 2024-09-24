@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -7,6 +7,10 @@
 package edn_reg_pkg;
 
   // Param list
+  parameter logic [31:0] EdnBootInsCmdResval = 32'h901;
+  parameter logic [31:0] EdnBootGenCmdResval = 32'hfff003;
+  parameter logic [31:0] CtrlResval = 32'h9999;
+  parameter logic [31:0] MaxNumReqsBetweenReseedsResval = 32'h0;
   parameter int NumAlerts = 2;
 
   // Address widths within the block
@@ -19,56 +23,56 @@ package edn_reg_pkg;
   typedef struct packed {
     struct packed {
       logic        q;
-    } edn_cmd_req_done;
+    } edn_fatal_err;
     struct packed {
       logic        q;
-    } edn_fatal_err;
+    } edn_cmd_req_done;
   } edn_reg2hw_intr_state_reg_t;
 
   typedef struct packed {
     struct packed {
       logic        q;
-    } edn_cmd_req_done;
+    } edn_fatal_err;
     struct packed {
       logic        q;
-    } edn_fatal_err;
+    } edn_cmd_req_done;
   } edn_reg2hw_intr_enable_reg_t;
 
   typedef struct packed {
     struct packed {
       logic        q;
       logic        qe;
-    } edn_cmd_req_done;
+    } edn_fatal_err;
     struct packed {
       logic        q;
       logic        qe;
-    } edn_fatal_err;
+    } edn_cmd_req_done;
   } edn_reg2hw_intr_test_reg_t;
 
   typedef struct packed {
     struct packed {
       logic        q;
       logic        qe;
-    } recov_alert;
+    } fatal_alert;
     struct packed {
       logic        q;
       logic        qe;
-    } fatal_alert;
+    } recov_alert;
   } edn_reg2hw_alert_test_reg_t;
 
   typedef struct packed {
     struct packed {
       logic [3:0]  q;
-    } edn_enable;
-    struct packed {
-      logic [3:0]  q;
-    } boot_req_mode;
+    } cmd_fifo_rst;
     struct packed {
       logic [3:0]  q;
     } auto_req_mode;
     struct packed {
       logic [3:0]  q;
-    } cmd_fifo_rst;
+    } boot_req_mode;
+    struct packed {
+      logic [3:0]  q;
+    } edn_enable;
   } edn_reg2hw_ctrl_reg_t;
 
   typedef struct packed {
@@ -119,12 +123,43 @@ package edn_reg_pkg;
     struct packed {
       logic        d;
       logic        de;
+    } cmd_reg_rdy;
+    struct packed {
+      logic        d;
+      logic        de;
     } cmd_rdy;
     struct packed {
       logic        d;
       logic        de;
+    } cmd_ack;
+    struct packed {
+      logic [2:0]  d;
+      logic        de;
     } cmd_sts;
   } edn_hw2reg_sw_cmd_sts_reg_t;
+
+  typedef struct packed {
+    struct packed {
+      logic        d;
+      logic        de;
+    } boot_mode;
+    struct packed {
+      logic        d;
+      logic        de;
+    } auto_mode;
+    struct packed {
+      logic [3:0]  d;
+      logic        de;
+    } cmd_type;
+    struct packed {
+      logic        d;
+      logic        de;
+    } cmd_ack;
+    struct packed {
+      logic [2:0]  d;
+      logic        de;
+    } cmd_sts;
+  } edn_hw2reg_hw_cmd_sts_reg_t;
 
   typedef struct packed {
     struct packed {
@@ -147,6 +182,10 @@ package edn_reg_pkg;
       logic        d;
       logic        de;
     } edn_bus_cmp_alert;
+    struct packed {
+      logic        d;
+      logic        de;
+    } csrng_ack_err;
   } edn_hw2reg_recov_alert_sts_reg_t;
 
   typedef struct packed {
@@ -158,10 +197,6 @@ package edn_reg_pkg;
       logic        d;
       logic        de;
     } sfifo_gencmd_err;
-    struct packed {
-      logic        d;
-      logic        de;
-    } sfifo_output_err;
     struct packed {
       logic        d;
       logic        de;
@@ -211,10 +246,11 @@ package edn_reg_pkg;
 
   // HW -> register type
   typedef struct packed {
-    edn_hw2reg_intr_state_reg_t intr_state; // [45:42]
-    edn_hw2reg_sw_cmd_sts_reg_t sw_cmd_sts; // [41:38]
-    edn_hw2reg_recov_alert_sts_reg_t recov_alert_sts; // [37:28]
-    edn_hw2reg_err_code_reg_t err_code; // [27:10]
+    edn_hw2reg_intr_state_reg_t intr_state; // [66:63]
+    edn_hw2reg_sw_cmd_sts_reg_t sw_cmd_sts; // [62:53]
+    edn_hw2reg_hw_cmd_sts_reg_t hw_cmd_sts; // [52:38]
+    edn_hw2reg_recov_alert_sts_reg_t recov_alert_sts; // [37:26]
+    edn_hw2reg_err_code_reg_t err_code; // [25:10]
     edn_hw2reg_main_sm_state_reg_t main_sm_state; // [9:0]
   } edn_hw2reg_t;
 
@@ -229,13 +265,14 @@ package edn_reg_pkg;
   parameter logic [BlockAw-1:0] EDN_BOOT_GEN_CMD_OFFSET = 7'h 1c;
   parameter logic [BlockAw-1:0] EDN_SW_CMD_REQ_OFFSET = 7'h 20;
   parameter logic [BlockAw-1:0] EDN_SW_CMD_STS_OFFSET = 7'h 24;
-  parameter logic [BlockAw-1:0] EDN_RESEED_CMD_OFFSET = 7'h 28;
-  parameter logic [BlockAw-1:0] EDN_GENERATE_CMD_OFFSET = 7'h 2c;
-  parameter logic [BlockAw-1:0] EDN_MAX_NUM_REQS_BETWEEN_RESEEDS_OFFSET = 7'h 30;
-  parameter logic [BlockAw-1:0] EDN_RECOV_ALERT_STS_OFFSET = 7'h 34;
-  parameter logic [BlockAw-1:0] EDN_ERR_CODE_OFFSET = 7'h 38;
-  parameter logic [BlockAw-1:0] EDN_ERR_CODE_TEST_OFFSET = 7'h 3c;
-  parameter logic [BlockAw-1:0] EDN_MAIN_SM_STATE_OFFSET = 7'h 40;
+  parameter logic [BlockAw-1:0] EDN_HW_CMD_STS_OFFSET = 7'h 28;
+  parameter logic [BlockAw-1:0] EDN_RESEED_CMD_OFFSET = 7'h 2c;
+  parameter logic [BlockAw-1:0] EDN_GENERATE_CMD_OFFSET = 7'h 30;
+  parameter logic [BlockAw-1:0] EDN_MAX_NUM_REQS_BETWEEN_RESEEDS_OFFSET = 7'h 34;
+  parameter logic [BlockAw-1:0] EDN_RECOV_ALERT_STS_OFFSET = 7'h 38;
+  parameter logic [BlockAw-1:0] EDN_ERR_CODE_OFFSET = 7'h 3c;
+  parameter logic [BlockAw-1:0] EDN_ERR_CODE_TEST_OFFSET = 7'h 40;
+  parameter logic [BlockAw-1:0] EDN_MAIN_SM_STATE_OFFSET = 7'h 44;
 
   // Reset values for hwext registers and their fields
   parameter logic [1:0] EDN_INTR_TEST_RESVAL = 2'h 0;
@@ -260,6 +297,7 @@ package edn_reg_pkg;
     EDN_BOOT_GEN_CMD,
     EDN_SW_CMD_REQ,
     EDN_SW_CMD_STS,
+    EDN_HW_CMD_STS,
     EDN_RESEED_CMD,
     EDN_GENERATE_CMD,
     EDN_MAX_NUM_REQS_BETWEEN_RESEEDS,
@@ -270,7 +308,7 @@ package edn_reg_pkg;
   } edn_id_e;
 
   // Register width information to check illegal writes
-  parameter logic [3:0] EDN_PERMIT [17] = '{
+  parameter logic [3:0] EDN_PERMIT [18] = '{
     4'b 0001, // index[ 0] EDN_INTR_STATE
     4'b 0001, // index[ 1] EDN_INTR_ENABLE
     4'b 0001, // index[ 2] EDN_INTR_TEST
@@ -281,13 +319,14 @@ package edn_reg_pkg;
     4'b 1111, // index[ 7] EDN_BOOT_GEN_CMD
     4'b 1111, // index[ 8] EDN_SW_CMD_REQ
     4'b 0001, // index[ 9] EDN_SW_CMD_STS
-    4'b 1111, // index[10] EDN_RESEED_CMD
-    4'b 1111, // index[11] EDN_GENERATE_CMD
-    4'b 1111, // index[12] EDN_MAX_NUM_REQS_BETWEEN_RESEEDS
-    4'b 0011, // index[13] EDN_RECOV_ALERT_STS
-    4'b 1111, // index[14] EDN_ERR_CODE
-    4'b 0001, // index[15] EDN_ERR_CODE_TEST
-    4'b 0011  // index[16] EDN_MAIN_SM_STATE
+    4'b 0011, // index[10] EDN_HW_CMD_STS
+    4'b 1111, // index[11] EDN_RESEED_CMD
+    4'b 1111, // index[12] EDN_GENERATE_CMD
+    4'b 1111, // index[13] EDN_MAX_NUM_REQS_BETWEEN_RESEEDS
+    4'b 0011, // index[14] EDN_RECOV_ALERT_STS
+    4'b 1111, // index[15] EDN_ERR_CODE
+    4'b 0001, // index[16] EDN_ERR_CODE_TEST
+    4'b 0011  // index[17] EDN_MAIN_SM_STATE
   };
 
 endpackage

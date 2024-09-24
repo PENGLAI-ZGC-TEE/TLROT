@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -12,6 +12,9 @@ module keymgr
   import keymgr_reg_pkg::*;
 #(
   parameter logic [NumAlerts-1:0] AlertAsyncOn = {NumAlerts{1'b1}},
+  // In case this is set to true, the keymgr will ignore the creator / owner seeds
+  // on the flash_i port and use the seeds provided in otp_key_i instead.
+  parameter bit UseOtpSeedsInsteadOfFlash      = 1'b0,
   parameter bit KmacEnMasking                  = 1'b1,
   parameter lfsr_seed_t RndCnstLfsrSeed        = RndCnstLfsrSeedDefault,
   parameter lfsr_perm_t RndCnstLfsrPerm        = RndCnstLfsrPermDefault,
@@ -81,6 +84,8 @@ module keymgr
 
   import prim_mubi_pkg::mubi4_test_true_strict;
   import prim_mubi_pkg::mubi4_test_false_strict;
+  import lc_ctrl_pkg::lc_tx_test_true_strict;
+  import lc_ctrl_pkg::lc_tx_t;
 
   /////////////////////////////////////
   // Anchor incoming seeds and constants
@@ -143,16 +148,14 @@ module keymgr
     .hw2reg,
     .shadowed_storage_err_o (shadowed_storage_err),
     .shadowed_update_err_o  (shadowed_update_err),
-    .intg_err_o             (regfile_intg_err),
-
-    .devmode_i (1'b1) // connect to real devmode signal in the future
+    .intg_err_o             (regfile_intg_err)
   );
 
   /////////////////////////////////////
   //  Synchronize lc_ctrl control inputs
   //  Data inputs are not synchronized and assumed quasi-static
   /////////////////////////////////////
-  lc_ctrl_pkg::lc_tx_t [KeyMgrEnLast-1:0] lc_keymgr_en;
+  lc_tx_t [KeyMgrEnLast-1:0] lc_keymgr_en;
 
   prim_lc_sync #(
     .NumCopies(int'(KeyMgrEnLast))
@@ -177,10 +180,12 @@ module keymgr
   // The second case is less sensitive and is applied directly.  If the inputs
   // have more bits than the lfsr output, the lfsr value is simply replicated
 
+  logic lfsr_en;
   logic seed_en;
   logic [LfsrWidth-1:0] seed;
   logic reseed_req;
   logic reseed_ack;
+  logic reseed_done;
   logic reseed_cnt_err;
 
   keymgr_reseed_ctrl u_reseed_ctrl (
@@ -190,9 +195,11 @@ module keymgr
     .rst_edn_ni,
     .reseed_req_i(reseed_req),
     .reseed_ack_o(reseed_ack),
+    .reseed_done_o(reseed_done),
     .reseed_interval_i(reg2hw.reseed_interval_shadowed.q),
     .edn_o,
     .edn_i,
+    .lfsr_en_i(lfsr_en),
     .seed_en_o(seed_en),
     .seed_o(seed),
     .cnt_err_o(reseed_cnt_err)
@@ -200,6 +207,7 @@ module keymgr
 
   logic [63:0] lfsr;
   logic ctrl_lfsr_en, data_lfsr_en, sideload_lfsr_en;
+  assign lfsr_en = ctrl_lfsr_en | data_lfsr_en | sideload_lfsr_en;
 
   prim_lfsr #(
     .LfsrDw(LfsrWidth),
@@ -211,13 +219,8 @@ module keymgr
   ) u_lfsr (
     .clk_i,
     .rst_ni,
-    .lfsr_en_i(ctrl_lfsr_en | data_lfsr_en | sideload_lfsr_en),
-    // The seed update is skipped if there is an ongoing keymgr transaction.
-    // This is not really done for any functional purpose but more to simplify
-    // DV. When an invalid operation is selected, the keymgr just starts transmitting
-    // whatever is at the prng output, however, this may cause a dv protocol violation
-    // if a reseed happens to coincide.
-    .seed_en_i(seed_en & ~reg2hw.start.q),
+    .lfsr_en_i(lfsr_en),
+    .seed_en_i(seed_en),
     .seed_i(seed),
     .entropy_i('0),
     .state_o(lfsr)
@@ -275,7 +278,7 @@ module keymgr
   ) u_ctrl (
     .clk_i,
     .rst_ni,
-    .en_i(lc_keymgr_en[KeyMgrEnCtrl] == lc_ctrl_pkg::On),
+    .en_i(lc_tx_test_true_strict(lc_keymgr_en[KeyMgrEnCtrl])),
     .regfile_intg_err_i(regfile_intg_err),
     .shadowed_update_err_i(shadowed_update_err),
     .shadowed_storage_err_i(shadowed_storage_err),
@@ -284,6 +287,7 @@ module keymgr
     .sideload_fsm_err_i(sideload_fsm_err),
     .prng_reseed_req_o(reseed_req),
     .prng_reseed_ack_i(reseed_ack),
+    .prng_reseed_done_i(reseed_done),
     .prng_en_o(ctrl_lfsr_en),
     .entropy_i(ctrl_rand),
     .op_i(keymgr_ops_e'(reg2hw.control_shadowed.operation.q)),
@@ -333,7 +337,7 @@ module keymgr
     .clk_i,
     .rst_ni,
     .init_i(1'b1), // cfg_regwen does not care about init
-    .en_i(lc_keymgr_en[KeyMgrEnCfgEn] == lc_ctrl_pkg::On),
+    .en_i(lc_tx_test_true_strict(lc_keymgr_en[KeyMgrEnCfgEn])),
     .set_i(op_start & op_done),
     .clr_i(op_start),
     .out_o(cfg_regwen)
@@ -356,7 +360,7 @@ module keymgr
     .clk_i,
     .rst_ni,
     .init_i(init),
-    .en_i(lc_keymgr_en[KeyMgrEnSwBindingEn] == lc_ctrl_pkg::On),
+    .en_i(lc_tx_test_true_strict(lc_keymgr_en[KeyMgrEnSwBindingEn])),
     .set_i(sw_binding_unlock),
     .clr_i(sw_binding_clr),
     .out_o(sw_binding_regwen)
@@ -404,13 +408,36 @@ module keymgr
   // Advance to creator_root_key
   // The values coming from otp_ctrl / lc_ctrl are treat as quasi-static for CDC purposes
   logic [KeyWidth-1:0] creator_seed;
-  assign creator_seed = flash_i.seeds[flash_ctrl_pkg::CreatorSeedIdx];
+  logic unused_creator_seed;
+  if (UseOtpSeedsInsteadOfFlash) begin : gen_otp_creator_seed
+    assign unused_creator_seed = ^{flash_i.seeds[flash_ctrl_pkg::CreatorSeedIdx],
+                                   otp_key_i.creator_seed_valid};
+    assign creator_seed = otp_key_i.creator_seed;
+  end else begin : gen_flash_creator_seed
+    assign unused_creator_seed = ^{otp_key_i.creator_seed,
+                                   otp_key_i.creator_seed_valid};
+    assign creator_seed = flash_i.seeds[flash_ctrl_pkg::CreatorSeedIdx];
+  end
+  // TODO(opentitan-integrated/issues/251):
+  // replace below code with commented code once SW and DV model can handle multiple
+  // // ROM_CTRL digests.
+  // logic [KeyWidth*NumRomDigestInputs-1:0] rom_digests;
+  // always_comb begin
+  //   rom_digests = '0;
+  //   for (int k = 0; k < NumRomDigestInputs; k++) begin
+  //     rom_digests[KeyWidth*k +: KeyWidth] = rom_digest_i[k].data;
+  //   end
+  // end
+  // assign adv_matrix[Creator] = AdvDataWidth'({sw_binding,
+  //                                             otp_device_id_i,
+  //                                             lc_keymgr_div_i,
+  //                                             rom_digests,
+  //                                             revision_seed});
   assign adv_matrix[Creator] = AdvDataWidth'({sw_binding,
-                                              revision_seed,
                                               otp_device_id_i,
                                               lc_keymgr_div_i,
                                               rom_digest_i.data,
-                                              creator_seed});
+                                              revision_seed});
 
   assign adv_dvalid[Creator] = creator_seed_vld &
                                devid_vld &
@@ -419,12 +446,21 @@ module keymgr
 
   // Advance to owner_intermediate_key
   logic [KeyWidth-1:0] owner_seed;
-  assign owner_seed = flash_i.seeds[flash_ctrl_pkg::OwnerSeedIdx];
-  assign adv_matrix[OwnerInt] = AdvDataWidth'({sw_binding,owner_seed});
+  logic unused_owner_seed;
+  if (UseOtpSeedsInsteadOfFlash) begin : gen_otp_owner_seed
+    assign unused_owner_seed = ^{flash_i.seeds[flash_ctrl_pkg::OwnerSeedIdx],
+                                 otp_key_i.owner_seed_valid};
+    assign owner_seed = otp_key_i.owner_seed;
+  end else begin : gen_flash_owner_seed
+    assign unused_owner_seed = ^{otp_key_i.owner_seed,
+                                 otp_key_i.owner_seed_valid};
+    assign owner_seed = flash_i.seeds[flash_ctrl_pkg::OwnerSeedIdx];
+  end
+  assign adv_matrix[OwnerInt] = AdvDataWidth'({sw_binding, creator_seed});
   assign adv_dvalid[OwnerInt] = owner_seed_vld;
 
   // Advance to owner_key
-  assign adv_matrix[Owner] = AdvDataWidth'(sw_binding);
+  assign adv_matrix[Owner] = AdvDataWidth'({sw_binding, owner_seed});
   assign adv_dvalid[Owner] = 1'b1;
 
   // Generate Identity operation input construction
@@ -516,7 +552,9 @@ module keymgr
   assign invalid_data[OpGenSwOut] = ~key_vld | ~key_version_vld;
   assign invalid_data[OpGenHwOut] = ~key_vld | ~key_version_vld;
 
-  keymgr_kmac_if u_kmac_if (
+  keymgr_kmac_if #(
+    .RndCnstRandPerm(RndCnstRandPerm)
+  ) u_kmac_if (
     .clk_i,
     .rst_ni,
     .prng_en_o(data_lfsr_en),

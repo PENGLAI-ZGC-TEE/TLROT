@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
@@ -147,10 +147,12 @@ module otbn_controller
   input  logic secure_wipe_ack_i,
   input  logic sec_wipe_zero_i,
   input  logic secure_wipe_running_i,
+  input  logic sec_wipe_err_i,
 
   input  logic        state_reset_i,
   output logic [31:0] insn_cnt_o,
-  input  logic        insn_cnt_clear_i,
+  input  logic        insn_cnt_clear_ext_i,
+  input  logic        insn_cnt_clear_int_i,
   output logic        mems_sec_wipe_o,
 
   input  logic        software_errs_fatal_i,
@@ -192,6 +194,7 @@ module otbn_controller
   logic executing;
   logic state_error, state_error_d, state_error_q;
   logic spurious_secure_wipe_ack_q, spurious_secure_wipe_ack_d;
+  logic sec_wipe_err_q, sec_wipe_err_d;
   logic mubi_err_q, mubi_err_d;
 
   logic                     insn_fetch_req_valid_raw;
@@ -348,6 +351,18 @@ module otbn_controller
                                        ~secure_wipe_running_q &
                                        ~secure_wipe_running_i);
 
+  // Detect and latch unexpected secure wipe signals.
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      sec_wipe_err_q <= 1'b0;
+    end else begin
+      sec_wipe_err_q <= sec_wipe_err_d;
+    end
+  end
+  assign sec_wipe_err_d = sec_wipe_err_q |
+                          sec_wipe_err_i |
+                          (sec_wipe_zero_i & ~secure_wipe_running_i);
+
   // Stall a cycle on loads to allow load data writeback to happen the following cycle. Stall not
   // required on stores as there is no response to deal with.
   assign mem_stall = lsu_load_req_raw;
@@ -490,7 +505,6 @@ module otbn_controller
     // On any error immediately halt, either going to OtbnStateLocked or OtbnStateHalt depending on
     // whether it was a fatal error.
     if (err) begin
-      prefetch_en_o           = 1'b0;
       insn_fetch_resp_clear_o = 1'b1;
 
       if (fatal_err) begin
@@ -552,7 +566,6 @@ module otbn_controller
   // into fatal_escalate_en_i, RND errors factor into recov_escalate_en_i).
   assign mubi_err_d = |{mubi4_test_invalid(fatal_escalate_en_i),
                         mubi4_test_invalid(recov_escalate_en_i),
-                        mubi4_test_invalid(rma_req_i),
                         mubi_err_q};
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
@@ -569,7 +582,7 @@ module otbn_controller
   assign fatal_software_err       = software_err & software_errs_fatal_i;
   assign bad_internal_state_err   = |{state_error_d, loop_hw_err, rf_base_call_stack_hw_err_i,
                                       rf_bignum_spurious_we_err, spurious_secure_wipe_ack_q,
-                                      mubi_err_q};
+                                      sec_wipe_err_q, mubi_err_q};
   assign reg_intg_violation_err   = rf_bignum_intg_err | ispr_rdata_intg_err;
   assign key_invalid_err          = ispr_rd_bignum_insn & insn_valid_i & key_invalid;
   assign illegal_insn_err         = illegal_insn_static | rf_indirect_err;
@@ -648,7 +661,7 @@ module otbn_controller
   // and eventually acknowledging the RMA request.
   assign fatal_err = |{internal_fatal_err,
                        mubi4_test_true_loose(fatal_escalate_en_i),
-                       mubi4_test_true_loose(rma_req_i)};
+                       mubi4_test_true_strict(rma_req_i)};
 
   assign recoverable_err_o = recoverable_err | (software_err & ~software_errs_fatal_i);
   assign mems_sec_wipe_o   = (state_d == OtbnStateLocked) & (state_q != OtbnStateLocked);
@@ -664,7 +677,7 @@ module otbn_controller
   `ASSERT(ErrBitSetOnErr,
       err & (mubi4_test_false_strict(fatal_escalate_en_i) &
              mubi4_test_false_strict(recov_escalate_en_i) &
-             mubi4_test_false_strict(rma_req_i)) |=>
+             mubi4_test_false_loose(rma_req_i)) |=>
           err_bits_o)
   `ASSERT(ErrSetOnFatalErr, fatal_err |-> err)
   `ASSERT(SoftwareErrIfNonInsnAddrSoftwareErr, non_insn_addr_software_err |-> software_err)
@@ -680,7 +693,10 @@ module otbn_controller
   `PRIM_FLOP_SPARSE_FSM(u_state_regs, state_d, state_q, otbn_state_e, OtbnStateHalt)
 
   // SEC_CM: CTRL_FLOW.COUNT
-  assign insn_cnt_clear = state_reset_i | (state_q == OtbnStateLocked) | insn_cnt_clear_i;
+  // Two explicit clear controls, one comes from external to otbn_core and the other is generated
+  // internally (by otbn_start_stop_control).
+  assign insn_cnt_clear =
+    (state_q == OtbnStateLocked) | insn_cnt_clear_ext_i | insn_cnt_clear_int_i;
 
   always_comb begin
     if (insn_cnt_clear) begin
@@ -1320,9 +1336,8 @@ module otbn_controller
   logic non_prefetch_insn_running;
   assign non_prefetch_insn_running = (insn_valid_i & ~stall &
                                       (csr_addr != CsrRndPrefetch) & ~key_invalid);
-  // zdr ecc disable
-  // logic ispr_rdata_used_intg_err_zdr = (|ispr_rdata_used_intg_err) & 1'b0;
-  assign ispr_rdata_intg_err = non_prefetch_insn_running & |((|ispr_rdata_used_intg_err) & 1'b0);
+
+  assign ispr_rdata_intg_err = non_prefetch_insn_running & |(ispr_rdata_used_intg_err);
 
   `ASSERT_KNOWN(IsprRdataIntgErrKnown_A, ispr_rdata_intg_err)
 

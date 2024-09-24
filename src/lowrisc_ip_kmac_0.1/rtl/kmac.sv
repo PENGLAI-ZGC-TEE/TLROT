@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -32,7 +32,7 @@ module kmac
 
   parameter lfsr_perm_t RndCnstLfsrPerm = RndCnstLfsrPermDefault,
   parameter lfsr_seed_t RndCnstLfsrSeed = RndCnstLfsrSeedDefault,
-  parameter lfsr_fwd_perm_t RndCnstLfsrFwdPerm = RndCnstLfsrFwdPermDefault,
+  parameter buffer_lfsr_seed_t RndCnstBufferLfsrSeed = RndCnstBufferLfsrSeedDefault,
   parameter msg_perm_t  RndCnstMsgPerm  = RndCnstMsgPermDefault,
 
   parameter logic [NumAlerts-1:0] AlertAsyncOn = {NumAlerts{1'b1}}
@@ -138,10 +138,6 @@ module kmac
   kmac_reg2hw_t reg2hw;
   kmac_hw2reg_t hw2reg;
 
-  // devmode ties to 1 as KMAC should be operated at the beginning for ROM_CTRL.
-  logic devmode;
-  assign devmode = 1'b 1;
-
   // Window
   typedef enum int {
     WinState   = 0,
@@ -204,7 +200,7 @@ module kmac
   logic [sha3_pkg::StateW-1:0] reg_state [Share];
 
   // SHA3 Entropy interface
-  logic sha3_rand_valid, sha3_rand_early, sha3_rand_consumed;
+  logic sha3_rand_valid, sha3_rand_early, sha3_rand_update, sha3_rand_consumed;
   logic [sha3_pkg::StateW/2-1:0] sha3_rand_data;
   logic sha3_rand_aux;
 
@@ -267,6 +263,7 @@ module kmac
   logic [MaxKeyLen-1:0] sw_key_data [Share];
   key_len_e             sw_key_len;
   logic [MaxKeyLen-1:0] key_data [Share];
+  logic                 key_valid;
   key_len_e             key_len;
 
   // SHA3 Mode, Strength, KMAC enable for app interface
@@ -280,6 +277,7 @@ module kmac
   // Indicating AppIntf is active. This signal is used to check SW error
   logic app_active;
 
+  // SEC_CM: SW_CMD.CTRL.SPARSE
   // Command
   // sw_cmd is the command written by SW
   // checked_sw_cmd is checked in the kmac_errchk module.
@@ -295,8 +293,8 @@ module kmac
   logic [9:0]  wait_timer_prescaler;
   logic [15:0] wait_timer_limit;
   logic        entropy_refresh_req;
-  logic [NumSeedsEntropyLfsr-1:0]       entropy_seed_update;
-  logic [NumSeedsEntropyLfsr-1:0][31:0] entropy_seed_data;
+  logic        entropy_seed_update;
+  logic [31:0] entropy_seed_data;
 
   logic [HashCntW-1:0] entropy_hash_threshold;
   logic [HashCntW-1:0] entropy_hash_cnt;
@@ -328,6 +326,8 @@ module kmac
   kmac_pkg::err_t msgfifo_err;
 
   logic err_processed;
+
+  prim_mubi_pkg::mubi4_t clear_after_error;
 
   logic alert_fatal, alert_recov_operation;
   logic alert_intg_err;
@@ -529,10 +529,8 @@ module kmac
   assign wait_timer_limit     = reg2hw.entropy_period.wait_timer.q;
   assign entropy_refresh_req = reg2hw.cmd.entropy_req.q
                             && reg2hw.cmd.entropy_req.qe;
-  for (genvar i = 0; i < NumSeedsEntropyLfsr; i++) begin : gen_entropy_seed
-    assign entropy_seed_update[i] = reg2hw.entropy_seed[i].qe;
-    assign entropy_seed_data[i] = reg2hw.entropy_seed[i].q;
-  end
+  assign entropy_seed_update = reg2hw.entropy_seed.qe;
+  assign entropy_seed_data = reg2hw.entropy_seed.q;
 
   assign entropy_hash_threshold = reg2hw.entropy_refresh_threshold_shadowed.q;
   assign hw2reg.entropy_refresh_hash_cnt.de = 1'b 1;
@@ -570,8 +568,7 @@ module kmac
   end
 
   // Clear the error processed
-  assign err_processed = reg2hw.cfg_shadowed.err_processed.q
-                       & reg2hw.cfg_shadowed.err_processed.qe;
+  assign err_processed = reg2hw.cmd.err_processed.q & reg2hw.cmd.err_processed.qe;
 
   // Make sure the field has latch in reg_top
   `ASSERT(ErrProcessedLatched_A, $rose(err_processed) |=> !err_processed)
@@ -584,8 +581,6 @@ module kmac
   ///////////////
   // Interrupt //
   ///////////////
-
-  logic event_msgfifo_empty, msgfifo_empty_q;
 
   // Hash process absorbed interrupt
   // Convert mubi4_t to logic to generate interrupts
@@ -608,17 +603,67 @@ module kmac
     $rose(prim_mubi_pkg::mubi4_test_true_strict(sha3_absorbed)) |=>
       prim_mubi_pkg::mubi4_test_false_strict(sha3_absorbed))
 
+  // Message FIFO empty interrupt
+  //
+  // The message FIFO empty interrupt is **not useful** for software if:
+  // - One of the hardware application interfaces is actively using the KMAC block. In this case
+  //   the message FIFO is managed entirely by the application interface.
+  // - The SHA3 core is not in the Absorb state. Only in this state, the FIFO is writeable by
+  //   software anyway.
+  // - Software has already written the Process command. The KMAC block will now empty the
+  //   message FIFO and load its content into the SHA3 core, add the padding and then perfom
+  //   the final absorption. Software cannot append the message further.
+  //
+  // The message FIFO empty interrupt can be **useful** for software in particular if:
+  // - The message FIFO was completely full previously. However, unless the KMAC block is currently
+  //   processing a block or waiting for fresh entropy from EDN, it always empties the message FIFO
+  //   faster than software can fill it up, meaning the message FIFO is empty most of the time.
+  //   Note, the empty status is signaled only once after the FIFO was completely full. The FIFO
+  //   needs to be full again for the empty status to be signaled again next time it's empty.
+  //
+  // For further details see also:
+  // https://opentitan.org/book/hw/ip/kmac/doc/theory_of_operation.html#fifo-depth-and-empty-status
+  logic status_msgfifo_empty, msgfifo_empty_gate;
+  logic msgfifo_empty_negedge, msgfifo_empty_q;
+  logic msgfifo_full_seen_d, msgfifo_full_seen_q;
+  assign msgfifo_empty_negedge = msgfifo_empty_q & ~msgfifo_empty;
+
+  // Track whether the message FIFO was full after being empty. We clear the tracking:
+  // - When receiving the Process command. This is to start over for the next message.
+  // - When seeing a negative edge on the empty signal. This signals that software has reacted to
+  //   the interrupt and is filling up the FIFO again.
+  assign msgfifo_full_seen_d =
+      msgfifo_full          ? 1'b 1 :
+      msgfifo_empty_negedge ? 1'b 0 :
+      msgfifo2kmac_process  ? 1'b 0 : msgfifo_full_seen_q;
+
+  // The interrupt is gated unless software is performing an absorption operation (but not the
+  // final block) and the FIFO was full before. The msgfifo2kmac_process pulse is arriving from the
+  // FIFO together with the empty signal.
+  assign msgfifo_empty_gate =
+      app_active                     ? 1'b 1 :
+      sha3_fsm != sha3_pkg::StAbsorb ? 1'b 1 :
+      msgfifo2kmac_process           ? 1'b 1 : ~msgfifo_full_seen_q;
+
+  assign status_msgfifo_empty = msgfifo_empty_gate ? 1'b 0 : msgfifo_empty;
+
   always_ff @(posedge clk_i or negedge rst_ni) begin
-    if (!rst_ni) msgfifo_empty_q <= 1'b1;
-    else         msgfifo_empty_q <= msgfifo_empty;
+    if (!rst_ni) begin
+      msgfifo_empty_q     <= 1'b 0;
+      msgfifo_full_seen_q <= 1'b 0;
+    end else begin
+      msgfifo_empty_q     <= msgfifo_empty;
+      msgfifo_full_seen_q <= msgfifo_full_seen_d;
+    end
   end
 
-  assign event_msgfifo_empty = ~msgfifo_empty_q & msgfifo_empty;
-
-  prim_intr_hw #(.Width(1)) intr_fifo_empty (
+  prim_intr_hw #(
+    .Width(1),
+    .IntrT("Status")
+  ) intr_fifo_empty (
     .clk_i,
     .rst_ni,
-    .event_intr_i           (event_msgfifo_empty),
+    .event_intr_i           (status_msgfifo_empty),
     .reg2hw_intr_enable_q_i (reg2hw.intr_enable.fifo_empty.q),
     .reg2hw_intr_test_q_i   (reg2hw.intr_test.fifo_empty.q),
     .reg2hw_intr_test_qe_i  (reg2hw.intr_test.fifo_empty.qe),
@@ -629,7 +674,6 @@ module kmac
   );
 
   // Error
-  // As of now, only SHA3 error exists. More error codes will be added.
 
   logic event_error;
   assign event_error = sha3_err.valid    | app_err.valid
@@ -800,7 +844,7 @@ module kmac
     // SEC_CM: FSM.GLOBAL_ESC, FSM.LOCAL_ESC
     // Unconditionally jump into the terminal error state
     // if the life cycle controller triggers an escalation.
-    if (lc_escalate_en[0] != lc_ctrl_pkg::Off) begin
+    if (lc_ctrl_pkg::lc_tx_test_true_loose(lc_escalate_en[0])) begin
       kmac_st_d = KmacTerminalError;
     end
   end
@@ -835,8 +879,9 @@ module kmac
     .strength_i (app_keccak_strength),
 
     // Secret key interface
-    .key_data_i (key_data),
-    .key_len_i  (key_len ),
+    .key_data_i  (key_data),
+    .key_len_i   (key_len),
+    .key_valid_i (key_valid),
 
     // Controls
     .start_i   (sha3_start          ),
@@ -894,6 +939,7 @@ module kmac
     .rand_early_i    (sha3_rand_early),
     .rand_data_i     (sha3_rand_data),
     .rand_aux_i      (sha3_rand_aux),
+    .rand_update_o   (sha3_rand_update),
     .rand_consumed_o (sha3_rand_consumed),
 
     // N, S: Used in cSHAKE mode
@@ -921,6 +967,10 @@ module kmac
 
     .state_valid_o (state_valid),
     .state_o       (state), // [Share]
+
+    // REQ/ACK interface to avoid power spikes
+    .run_req_o (     ), // Not used
+    .run_ack_i (1'b 1), // The SHA3 core is always allowed to process.
 
     .error_o                    (sha3_err),
     .sparse_fsm_error_o         (sha3_state_error),
@@ -954,21 +1004,26 @@ module kmac
   ) u_tlul_adapter_msgfifo (
     .clk_i,
     .rst_ni,
-    .en_ifetch_i (prim_mubi_pkg::MuBi4False),
-    .tl_i        (tl_win_h2d[WinMsgFifo]),
-    .tl_o        (tl_win_d2h[WinMsgFifo]),
+    .en_ifetch_i                (prim_mubi_pkg::MuBi4False),
+    .tl_i                       (tl_win_h2d[WinMsgFifo]),
+    .tl_o                       (tl_win_d2h[WinMsgFifo]),
 
-    .req_o       (tlram_req),
-    .req_type_o  (),
-    .gnt_i       (tlram_gnt),
-    .we_o        (tlram_we ),
-    .addr_o      (tlram_addr),
-    .wdata_o     (tlram_wdata),
-    .wmask_o     (tlram_wmask),
-    .intg_error_o(           ),
-    .rdata_i     (tlram_rdata),
-    .rvalid_i    (tlram_rvalid),
-    .rerror_i    (tlram_rerror)
+    .req_o                      (tlram_req),
+    .req_type_o                 (),
+    .gnt_i                      (tlram_gnt),
+    .we_o                       (tlram_we ),
+    .addr_o                     (tlram_addr),
+    .wdata_o                    (tlram_wdata),
+    .wmask_o                    (tlram_wmask),
+    .intg_error_o               (           ),
+    .rdata_i                    (tlram_rdata),
+    .rvalid_i                   (tlram_rvalid),
+    .rerror_i                   (tlram_rerror),
+    .compound_txn_in_progress_o (),
+    .readback_en_i              (prim_mubi_pkg::MuBi4False),
+    .readback_error_o           (),
+    .wr_collision_i             (1'b0),
+    .write_pending_i            (1'b0)
   );
 
   assign sw_msg_valid = tlram_req & tlram_we ;
@@ -1015,8 +1070,9 @@ module kmac
     .app_o,
 
     // Secret Key output to KMAC Core
-    .key_data_o (key_data),
-    .key_len_o  (key_len),
+    .key_data_o  (key_data),
+    .key_len_o   (key_len),
+    .key_valid_o (key_valid),
 
     // to MSG_FIFO
     .kmac_valid_o (mux2fifo_valid),
@@ -1050,6 +1106,8 @@ module kmac
 
     .error_i         (sha3_err.valid),
     .err_processed_i (err_processed),
+
+    .clear_after_error_o (clear_after_error),
 
     // Command interface
     .sw_cmd_i (checked_sw_cmd),
@@ -1154,6 +1212,7 @@ module kmac
     .lc_escalate_en_i (lc_escalate_en[4]),
 
     .err_processed_i (err_processed),
+    .clear_after_error_i (clear_after_error),
 
     .error_o            (errchecker_err),
     .sparse_fsm_error_o (kmac_errchk_state_error)
@@ -1176,7 +1235,7 @@ module kmac
       .rst_src_ni(rst_ni),
       .clk_dst_i (clk_edn_i),
       .rst_dst_ni(rst_edn_ni),
-      .req_chk_i ((kmac_entropy_state_error == 1'b0) && (entropy_err.valid == 1'b0)),
+      .req_chk_i (1'b1),
       .src_req_i (entropy_req),
       .src_ack_o (entropy_ack),
       .dst_req_o (entropy_o.edn_req),
@@ -1191,7 +1250,7 @@ module kmac
     kmac_entropy #(
      .RndCnstLfsrPerm(RndCnstLfsrPerm),
      .RndCnstLfsrSeed(RndCnstLfsrSeed),
-     .RndCnstLfsrFwdPerm(RndCnstLfsrFwdPerm)
+     .RndCnstBufferLfsrSeed(RndCnstBufferLfsrSeed)
     ) u_entropy (
       .clk_i,
       .rst_ni,
@@ -1206,6 +1265,7 @@ module kmac
       .rand_early_o    (sha3_rand_early),
       .rand_data_o     (sha3_rand_data),
       .rand_aux_o      (sha3_rand_aux),
+      .rand_update_i   (sha3_rand_update),
       .rand_consumed_i (sha3_rand_consumed),
 
       // Status from internal logic
@@ -1258,15 +1318,17 @@ module kmac
 
     assign entropy_o = '{default: '0};
 
+    logic unused_sha3_rand_update;
     logic unused_sha3_rand_consumed;
     assign sha3_rand_valid = 1'b 1;
     assign sha3_rand_early = 1'b 1;
     assign sha3_rand_data = '0;
     assign sha3_rand_aux = '0;
+    assign unused_sha3_rand_update = sha3_rand_update;
     assign unused_sha3_rand_consumed = sha3_rand_consumed;
 
-    logic [NumSeedsEntropyLfsr-1:0]       unused_seed_update;
-    logic [NumSeedsEntropyLfsr-1:0][31:0] unused_seed_data;
+    logic        unused_seed_update;
+    logic [31:0] unused_seed_data;
     logic [31:0] unused_refresh_period;
     logic unused_entropy_refresh_req;
     assign unused_seed_data = entropy_seed_data;
@@ -1322,9 +1384,7 @@ module kmac
     .shadowed_storage_err_o (shadowed_storage_err),
     .shadowed_update_err_o  (shadowed_update_err),
     // SEC_CM: BUS.INTEGRITY
-    .intg_err_o             (alert_intg_err),
-
-    .devmode_i (devmode)
+    .intg_err_o             (alert_intg_err)
   );
 
   logic unused_cfg_shadowed_qe;
@@ -1499,9 +1559,6 @@ module kmac
 
     `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(HashCountCheck_A, gen_entropy.u_entropy.u_hash_count,
                                          alert_tx_o[1])
-    `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(SeedIdxCountCheck_A,
-                                           gen_entropy.u_entropy.u_seed_idx_count,
-                                           alert_tx_o[1])
 
     // MsgFifo.Packer
     `ASSERT_PRIM_COUNT_ERROR_TRIGGER_ALERT(
