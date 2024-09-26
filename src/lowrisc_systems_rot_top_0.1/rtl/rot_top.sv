@@ -18,7 +18,7 @@ module rot_top #(
   parameter bit KeymgrUseOtpSeedsInsteadOfFlash = 0,
   parameter bit KeymgrKmacEnMasking = 1,
   // parameters for rom_ctrl
-  parameter RomCtrlBootRomInitFile = "",
+  parameter RomCtrlBootRomInitFile = "/nfs/home/zhangdongrong/Desktop/Nanhu/src/main/resources/TLROT/test.vmem",
   parameter bit SecRomCtrlDisableScrambling = 1'b0,
   // parameters for csrng
   parameter aes_pkg::sbox_impl_e CsrngSBoxImpl = aes_pkg::SBoxImplCanright,
@@ -33,7 +33,7 @@ module rot_top #(
   parameter bit SecOtbnMuteUrnd = 0,
   parameter bit SecOtbnSkipUrndReseedAtStart = 0,
   // alert
-  parameter logic [14-1:0] AlertAsyncOn = {14{1'b1}}
+  parameter logic [16-1:0] AlertAsyncOn = {16{1'b1}}
 ) (
     input clk_i,
     input rst_ni,
@@ -76,7 +76,7 @@ module rot_top #(
     input entropy_src_pkg::entropy_src_rng_rsp_t       es_rng_rsp_i,
     // input prim_mubi_pkg::mubi8_t       entropy_src_otp_en_entropy_src_fw_read,
     // input prim_mubi_pkg::mubi8_t       entropy_src_otp_en_entropy_src_fw_over,
-    // output logic       es_rng_fips_o, 
+    output logic       es_rng_fips_o, 
     // input tlul_pkg::tl_h2d_t       entropy_src_tl_req,
     // output tlul_pkg::tl_d2h_t       entropy_src_tl_rsp,
 
@@ -199,7 +199,7 @@ module rot_top #(
   // logic intr_edn0_edn_fatal_err;
 
   // define inter-module signal
-  prim_mubi_pkg::mubi4_t [2:0] clkmgr_aon_idle;
+  prim_mubi_pkg::mubi4_t [3:0] clkmgr_aon_idle;
   logic unused_clkmgr_aon_idle;
   assign unused_clkmgr_aon_idle = ^ clkmgr_aon_idle;
 
@@ -266,7 +266,7 @@ module rot_top #(
   // prim_mubi_pkg::mubi8_t       entropy_src_otp_en_entropy_src_fw_over;
   localparam prim_mubi_pkg::mubi8_t       entropy_src_otp_en_entropy_src_fw_read = prim_mubi_pkg::mubi8_t'(MuBi8False);
   localparam prim_mubi_pkg::mubi8_t       entropy_src_otp_en_entropy_src_fw_over = prim_mubi_pkg::mubi8_t'(MuBi8False);
-  logic       es_rng_fips_o;
+  // logic       es_rng_fips_o;
 
   // otbn
   localparam prim_ram_1p_pkg::ram_1p_cfg_t       ast_ram_1p_cfg = prim_ram_1p_pkg::RAM_1P_CFG_DEFAULT;
@@ -377,7 +377,7 @@ module rot_top #(
       .alert_rx_i  ( alert_rx_i[0:0] ),
 
       // Inter-module signals
-      .idle_o(clkmgr_aon_idle[0]),
+      .idle_o(clkmgr_aon_idle[1]),
       .tl_i(hmac_tl_req),
       .tl_o(hmac_tl_rsp),
 
@@ -415,7 +415,7 @@ module rot_top #(
       .entropy_i(edn0_edn_rsp_intr[3]),
       // .entropy_o(edn0_edn_req_rot),
       // .entropy_i(edn0_edn_rsp_rot),
-      .idle_o(clkmgr_aon_idle[1]),
+      .idle_o(clkmgr_aon_idle[2]),
       // .idle_o(clkmgr_aon_idle_rot),
       .en_masking_o(kmac_en_masking),
       .lc_escalate_en_i(lc_ctrl_lc_escalate_en),
@@ -646,7 +646,7 @@ module rot_top #(
       .edn_rnd_i(edn0_edn_rsp_intr[5]),
       .edn_urnd_o(edn0_edn_req_intr[6]),
       .edn_urnd_i(edn0_edn_rsp_intr[6]),
-      .idle_o(clkmgr_aon_idle[2]),
+      .idle_o(clkmgr_aon_idle[3]),
       .ram_cfg_i(ast_ram_1p_cfg),
       .lc_escalate_en_i(lc_ctrl_lc_escalate_en),
       .lc_rma_req_i(flash_ctrl_rma_ack),

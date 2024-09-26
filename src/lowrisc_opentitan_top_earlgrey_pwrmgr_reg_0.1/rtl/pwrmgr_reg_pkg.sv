@@ -89,7 +89,7 @@ package pwrmgr_reg_pkg;
     struct packed {
       logic        q;
       logic        qe;
-    } abort;
+    } abort_zdr;
     struct packed {
       logic        q;
       logic        qe;
@@ -157,7 +157,7 @@ package pwrmgr_reg_pkg;
     } fall_through;
     struct packed {
       logic        d;
-    } abort;
+    } abort_zdr;
   } pwrmgr_hw2reg_wake_info_reg_t;
 
   typedef struct packed {

@@ -6,24 +6,24 @@
 
 package tl_main_rot_pkg;
 
-  localparam logic [31:0] ADDR_SPACE_ROM_CTRL__ROM  = 32'h 00008000;
-  localparam logic [31:0] ADDR_SPACE_ROM_CTRL__REGS = 32'h 411e0000;
-  localparam logic [31:0] ADDR_SPACE_HMAC           = 32'h 41110000;
-  localparam logic [31:0] ADDR_SPACE_KMAC           = 32'h 41120000;
-  localparam logic [31:0] ADDR_SPACE_AES            = 32'h 41100000;
-  localparam logic [31:0] ADDR_SPACE_ENTROPY_SRC    = 32'h 41160000;
-  localparam logic [31:0] ADDR_SPACE_CSRNG          = 32'h 41150000;
-  localparam logic [31:0] ADDR_SPACE_EDN0           = 32'h 41170000;
-  localparam logic [31:0] ADDR_SPACE_OTBN           = 32'h 41130000;
-  localparam logic [31:0] ADDR_SPACE_KEYMGR         = 32'h 41140000;
-  localparam logic [31:0] ADDR_SPACE_SM3            = 32'h 411a0000;
-  localparam logic [31:0] ADDR_SPACE_SM4            = 32'h 411b0000;
-  localparam logic [31:0] ADDR_SPACE_RS_ENCODE      = 32'h 42110000;
-  localparam logic [31:0] ADDR_SPACE_RS_DECODE      = 32'h 42120000;
-  localparam logic [31:0] ADDR_SPACE_PUF1           = 32'h 42130000;
-  localparam logic [31:0] ADDR_SPACE_PUF2           = 32'h 42140000;
-  localparam logic [31:0] ADDR_SPACE_PUF_REG        = 32'h 42150000;
-  localparam logic [31:0] ADDR_SPACE_PCR            = 32'h 42160000;
+  localparam logic [31:0] ADDR_SPACE_ROM_CTRL__ROM  = 32'h 3b200000;
+  localparam logic [31:0] ADDR_SPACE_ROM_CTRL__REGS = 32'h 3b1e0000;
+  localparam logic [31:0] ADDR_SPACE_HMAC           = 32'h 3b110000;
+  localparam logic [31:0] ADDR_SPACE_KMAC           = 32'h 3b120000;
+  localparam logic [31:0] ADDR_SPACE_AES            = 32'h 3b300000;
+  localparam logic [31:0] ADDR_SPACE_ENTROPY_SRC    = 32'h 3b160000;
+  localparam logic [31:0] ADDR_SPACE_CSRNG          = 32'h 3b150000;
+  localparam logic [31:0] ADDR_SPACE_EDN0           = 32'h 3b190000;
+  localparam logic [31:0] ADDR_SPACE_OTBN           = 32'h 3b130000;
+  localparam logic [31:0] ADDR_SPACE_KEYMGR         = 32'h 3b140000;
+  localparam logic [31:0] ADDR_SPACE_SM3            = 32'h 3b1a0000;
+  localparam logic [31:0] ADDR_SPACE_SM4            = 32'h 3b1b0000;
+  localparam logic [31:0] ADDR_SPACE_RS_ENCODE      = 32'h 3b170000;
+  localparam logic [31:0] ADDR_SPACE_RS_DECODE      = 32'h 3b180000;
+  localparam logic [31:0] ADDR_SPACE_PUF1           = 32'h 3b1c0000;
+  localparam logic [31:0] ADDR_SPACE_PUF2           = 32'h 3b1d0000;
+  localparam logic [31:0] ADDR_SPACE_PUF_REG        = 32'h 3b310000;
+  localparam logic [31:0] ADDR_SPACE_PCR            = 32'h 3b320000;
 
   localparam logic [31:0] ADDR_MASK_ROM_CTRL__ROM  = 32'h 00007fff;
   localparam logic [31:0] ADDR_MASK_ROM_CTRL__REGS = 32'h 0000007f;

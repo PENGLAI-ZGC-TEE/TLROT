@@ -24,7 +24,7 @@ module inverse(y, x);
 	reg [7:0] y;
 
 	always @ (x)
-	case (x) // synopsys full_case parallel_case
+	case (x) 
 		1: y = 1; // 0 -> 255
 		2: y = 195; // 1 -> 254
 		4: y = 162; // 2 -> 253
@@ -280,6 +280,7 @@ module inverse(y, x);
 		81: y = 8; // 252 -> 3
 		162: y = 4; // 253 -> 2
 		195: y = 2; // 254 -> 1
+		default: y = 0;
 	endcase
 endmodule
 

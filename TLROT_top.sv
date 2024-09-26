@@ -28,53 +28,17 @@ module TLROT_top (
     output [31:0]  d_bits_data,
     output         d_bits_denied,
 
-    output         a_ready_rom,
-    input          a_valid_rom,
-    input  [2:0]   a_bits_opcode_rom,
-    input  [2:0]   a_bits_param_rom,
-    input  [2:0]   a_bits_size_rom,
-    input  [7:0]   a_bits_source_rom,
-    input  [31:0]  a_bits_address_rom,
-    input  [7:0]   a_bits_mask_rom,
-    input  [63:0]  a_bits_data_rom,
-    input         d_ready_rom,
-    output          d_valid_rom,
-    output [2:0]   d_bits_opcode_rom,
-    output [2:0]   d_bits_param_rom,
-    output [2:0]   d_bits_size_rom,
-    output [7:0]   d_bits_source_rom,
-    output         d_bits_sink_rom,
-    output [63:0]  d_bits_data_rom,
-    output         d_bits_denied_rom,
-
-    input [255:0] key0,
-    input logic key_valid,
-
-    output logic intr_hmac_hmac_done_o,
-    output logic intr_hmac_fifo_empty_o,
-    output logic intr_hmac_hmac_err_o,
-    output logic intr_kmac_kmac_done_o,
-    output logic intr_kmac_fifo_empty_o,
-    output logic intr_kmac_kmac_err_o,
-    output logic intr_keymgr_op_done_o,
-    output logic intr_csrng_cs_cmd_req_done_o,
-    output logic intr_csrng_cs_entropy_req_o,
-    output logic intr_csrng_cs_hw_inst_exc_o,
-    output logic intr_csrng_cs_fatal_err_o,
-    output logic intr_entropy_src_es_entropy_valid_o,
-    output logic intr_entropy_src_es_health_test_failed_o,
-    output logic intr_entropy_src_es_observe_fifo_ready_o,
-    output logic intr_entropy_src_es_fatal_err_o,
-    output logic intr_edn0_edn_cmd_req_done_o,
-    output logic intr_edn0_edn_fatal_err_o,
-    output logic intr_otbn_done
+    output logic [17:0] intr_rot_o
 );
 
 tlul_pkg::tl_h2d_t tl_i;
+tlul_pkg::tl_h2d_t tl_i_user;
 tlul_pkg::tl_d2h_t tl_o;
 
-tlul_pkg::tl_h2d_t64 rom_ctrl_rom_tl_req;
-tlul_pkg::tl_d2h_t64 rom_ctrl_rom_tl_rsp;
+localparam bit EnableDataIntgGen = 1;
+
+// tlul_pkg::tl_h2d_t64 rom_ctrl_rom_tl_req;
+// tlul_pkg::tl_d2h_t64 rom_ctrl_rom_tl_rsp;
 
 rom_ctrl_pkg::pwrmgr_data_t       rom_ctrl_pwrmgr_data;
 
@@ -87,20 +51,45 @@ entropy_src_pkg::entropy_src_rng_req_t       es_rng_req_o;
 entropy_src_pkg::entropy_src_rng_rsp_t       es_rng_rsp_i;
 logic       es_rng_fips_o;
 
+logic intr_hmac_hmac_done_o;
+logic intr_hmac_fifo_empty_o;
+logic intr_hmac_hmac_err_o;
+logic intr_kmac_kmac_done_o;
+logic intr_kmac_fifo_empty_o;
+logic intr_kmac_kmac_err_o;
+logic intr_keymgr_op_done_o;
+logic intr_csrng_cs_cmd_req_done_o;
+logic intr_csrng_cs_entropy_req_o;
+logic intr_csrng_cs_hw_inst_exc_o;
+logic intr_csrng_cs_fatal_err_o;
+logic intr_entropy_src_es_entropy_valid_o;
+logic intr_entropy_src_es_health_test_failed_o;
+logic intr_entropy_src_es_observe_fifo_ready_o;
+logic intr_entropy_src_es_fatal_err_o;
+logic intr_edn0_edn_cmd_req_done_o;
+logic intr_edn0_edn_fatal_err_o;
+logic intr_otbn_done;
 
-// always_comb begin
-//   if (a_bits_opcode == 3'b001 && 
-//       (a_bits_mask == 4'hf || a_bits_mask == 4'h0)) begin
-//     tl_i.a_opcode = 3'b000; 
-//     tl_i.a_mask = 4'hf;
-//   end else if (a_bits_opcode == 3'b100) begin
-//     tl_i.a_opcode = 3'b100; 
-//     tl_i.a_mask = 4'hf;
-//   end else begin
-//     tl_i.a_opcode = a_bits_opcode;
-//     tl_i.a_mask = a_bits_mask; 
-//   end
-// end
+assign intr_rot_o = {
+    intr_otbn_done,
+    intr_edn0_edn_fatal_err_o,
+    intr_edn0_edn_cmd_req_done_o,
+    intr_entropy_src_es_fatal_err_o,
+    intr_entropy_src_es_observe_fifo_ready_o,
+    intr_entropy_src_es_health_test_failed_o,
+    intr_entropy_src_es_entropy_valid_o,
+    intr_csrng_cs_fatal_err_o,
+    intr_csrng_cs_hw_inst_exc_o,
+    intr_csrng_cs_entropy_req_o,
+    intr_csrng_cs_cmd_req_done_o,
+    intr_keymgr_op_done_o,
+    intr_kmac_kmac_err_o,
+    intr_kmac_fifo_empty_o,
+    intr_kmac_kmac_done_o,
+    intr_hmac_hmac_err_o,
+    intr_hmac_fifo_empty_o,
+    intr_hmac_hmac_done_o
+};
 
 assign tl_i.a_valid = a_valid;
 assign tl_i.a_opcode = a_valid ? tl_a_op_e'(a_bits_opcode) : tl_a_op_e'(0);  
@@ -111,8 +100,16 @@ assign tl_i.a_address = a_valid ? a_bits_address : 0;
 assign tl_i.a_mask = a_valid ? a_bits_mask : 0;
 assign tl_i.a_data = a_valid ? a_bits_data : 0;
 
-assign tl_i.a_user =a_valid ?  tlul_pkg::TL_A_USER_DEFAULT : 0;
+assign tl_i.a_user = a_valid ?  tlul_pkg::TL_A_USER_DEFAULT : 0;
 // assign tl_o.d_user = tlul_pkg:TL_D_USER_DEFAULT;
+
+tlul_cmd_intg_gen #(.EnableDataIntgGen (EnableDataIntgGen)) u_cmd_intg_gen (
+    .tl_i(tl_i),
+    .tl_o(tl_i_user)
+  );
+
+tl_i_user.a_user.instr_type = ((tl_i.a_opcode == PutFullData)
+                        | (tl_i.a_opcode == PutPartialData) ) ? prim_mubi_pkg::MuBi4False : prim_mubi_pkg::MuBi4True;
 
 assign a_ready = tl_o.a_ready;
 
@@ -127,30 +124,6 @@ assign d_bits_denied = tl_o.d_error;
 
 assign tl_i.d_ready = d_ready;
 
-assign rom_ctrl_rom_tl_req.a_valid = a_valid_rom;
-assign rom_ctrl_rom_tl_req.a_opcode = tl_a_op_e'(a_bits_opcode_rom);  
-assign rom_ctrl_rom_tl_req.a_param = a_bits_param_rom;
-assign rom_ctrl_rom_tl_req.a_size = a_bits_size_rom;
-assign rom_ctrl_rom_tl_req.a_source = a_bits_source_rom;
-assign rom_ctrl_rom_tl_req.a_address = a_bits_address_rom;
-assign rom_ctrl_rom_tl_req.a_mask = a_bits_mask_rom;
-assign rom_ctrl_rom_tl_req.a_data = a_bits_data_rom;
-
-assign rom_ctrl_rom_tl_req.a_user = tlul_pkg::TL_A_USER_DEFAULT;
-// assign tl_o.d_user = tlul_pkg:TL_D_USER_DEFAULT;
-
-assign a_ready_rom = rom_ctrl_rom_tl_rsp.a_ready;
-
-assign d_valid_rom = rom_ctrl_rom_tl_rsp.d_valid;
-assign d_bits_opcode_rom = rom_ctrl_rom_tl_rsp.d_opcode;
-assign d_bits_param_rom = rom_ctrl_rom_tl_rsp.d_param;
-assign d_bits_size_rom = rom_ctrl_rom_tl_rsp.d_size;  
-assign d_bits_source_rom = rom_ctrl_rom_tl_rsp.d_source;
-assign d_bits_sink_rom  = rom_ctrl_rom_tl_rsp.d_sink;
-assign d_bits_data_rom = rom_ctrl_rom_tl_rsp.d_data;
-assign d_bits_denied_rom = rom_ctrl_rom_tl_rsp.d_error;
-
-assign rom_ctrl_rom_tl_req.d_ready = d_ready_rom;
 
 assign ROMInitEn = (rom_ctrl_pwrmgr_data==8'h66)? 1'd1 : 1'd0;
 
@@ -163,19 +136,16 @@ rot_top u_rot_top (
     .rst_edn_ni(~rst_ni),
     .scan_mode(scan_mode),
 
-    .tl_i(tl_i),
+    .tl_i(tl_i_user),
     .tl_o(tl_o),
 
     .rom_ctrl_pwrmgr_data(rom_ctrl_pwrmgr_data),
-    .rom_ctrl_rom_tl_req(rom_ctrl_rom_tl_req),
-    .rom_ctrl_rom_tl_rsp(rom_ctrl_rom_tl_rsp),
+    // .rom_ctrl_rom_tl_req(rom_ctrl_rom_tl_req),
+    // .rom_ctrl_rom_tl_rsp(rom_ctrl_rom_tl_rsp),
 
     .es_rng_req_o(es_rng_req_o),
     .es_rng_rsp_i(es_rng_rsp_i),
     .es_rng_fips_o(es_rng_fips_o),
-
-    .key0(key0),
-    .key_valid(key_valid),
 
     .intr_hmac_hmac_done_o(intr_hmac_hmac_done_o),
     .intr_hmac_fifo_empty_o(intr_hmac_fifo_empty_o),  
@@ -193,7 +163,8 @@ rot_top u_rot_top (
     .intr_entropy_src_es_observe_fifo_ready_o(intr_entropy_src_es_observe_fifo_ready_o),
     .intr_entropy_src_es_fatal_err_o(intr_entropy_src_es_fatal_err_o),
     .intr_edn0_edn_cmd_req_done_o(intr_edn0_edn_cmd_req_done_o),
-    .intr_edn0_edn_fatal_err_o(intr_edn0_edn_fatal_err_o)
+    .intr_edn0_edn_fatal_err_o(intr_edn0_edn_fatal_err_o),
+    .intr_otbn_done(intr_otbn_done)
 );
 
 localparam int unsigned EntropyStreams = 4;

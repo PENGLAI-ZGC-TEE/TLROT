@@ -159,7 +159,7 @@ module tlul_socket_1n #(
     assign tl_u_o[i].a_param   = tl_t_o.a_param;
     assign tl_u_o[i].a_size    = tl_t_o.a_size;
     assign tl_u_o[i].a_source  = tl_t_o.a_source;
-    assign tl_u_o[i].a_address = tl_t_o.a_address;
+    assign tl_u_o[i].a_address = dev_select ? tl_t_o.a_address : '0;
     assign tl_u_o[i].a_mask    = tl_t_o.a_mask;
     assign tl_u_o[i].a_data    = dev_select ?
                                  tl_t_o.a_data :
