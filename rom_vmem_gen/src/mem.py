@@ -273,6 +273,111 @@ class MemFile:
 
         return MemFile(32, chunks)
 
+    def load_elf64(infile: BinaryIO, base_addr: int) -> 'MemFile':
+        '''Read a little-endian 64-bit ELF file'''
+        elf_file = ELFFile(infile)
+        segments = []  # type: List[Tuple[int, int, bytes]]
+        
+        for segment in elf_file.iter_segments():
+            seg_type = segment['p_type']
+
+            # We're only interested in nonempty PT_LOAD segments
+            if seg_type != 'PT_LOAD' or segment['p_filesz'] == 0:
+                continue
+
+            # seg_lma is the (relative) address of the first byte to be loaded.
+            # seg_top is the address of the last byte to be loaded. A one-byte
+            # segment will have seg_lma == seg_top.
+            seg_lma = segment['p_paddr'] - base_addr
+            seg_top = seg_lma + segment['p_filesz'] - 1
+
+            assert seg_lma <= seg_top
+
+            # We re-map the addresses relative to base_addr: check that no
+            # segment starts before it.
+            if seg_lma < 0:
+                raise ValueError('ELF file contains a segment starting at '
+                                '{:#x}, so cannot be loaded relative to base '
+                                'address {:#x}.'
+                                .format(base_addr + seg_lma, base_addr))
+
+            segments.append((seg_lma, seg_top, segment.data()))
+
+        # Sort the segments by base address
+        segments.sort(key=lambda t: t[0])
+
+        # Make sure that they don't overlap
+        prev_lma = 0
+        next_addr = 0
+        for lma, top, data in segments:
+            if lma < next_addr:
+                raise ValueError('ELF file contains overlapping segments with '
+                                'address ranges {:#x}..{:#x} and '
+                                '{:#x}..{:#x}.'
+                                .format(base_addr + prev_lma,
+                                        base_addr + next_addr - 1,
+                                        base_addr + lma,
+                                        base_addr + top))
+            prev_lma = lma
+            next_addr = top + 1
+
+        # Merge any adjacent segments, bridging any sub-word gaps. This doesn't
+        # do any other right padding: we'll do that on the final pass that
+        # converts to 32-bit words.
+        merged_segments = []  # type: List[Tuple[int, int, bytes]]
+        next_word = 0
+        for lma, top, data in segments:
+            # Round the LMA down to the previous word boundary. The non-overlap
+            # check above should ensure that this is never actually less than
+            # next_word.
+            lma_word = lma // 4
+            assert next_word <= lma_word
+
+            # If there isn't an aligned whole word between the two segments,
+            # bridge the gap
+            if merged_segments and next_word == lma_word:
+                last_lma_word, last_top, last_data = merged_segments[-1]
+                if last_top < lma:
+                    # The largest gap possible here happens with addresses like
+                    # last_top = 0x100; lma = 0x107, which just bridges two
+                    # 4-byte words (0x100..0x103 and 0x104..0x107) with one
+                    # byte used from each, leaving 6 bytes to fill.
+                    assert lma - (last_top + 1) <= 6
+                    last_data += bytes(lma - (last_top + 1))
+                merged_segments[-1] = (last_lma_word, top, last_data + data)
+            else:
+                # Pad on the left if necessary to ensure that lma is 32-bit
+                # aligned.
+                if lma % 4:
+                    merged_segments.append((lma_word, top, bytes(lma % 4) + data))
+                else:
+                    merged_segments.append((lma_word, top, data))
+
+            # The index of the first word that starts strictly above top.
+            next_word = 1 + (top // 4)
+
+        # Assemble the bytes in each segment into little-endian 32-bit words.
+        # Zero-extend any partial word at the end of a segment. Because of the
+        # merging in the previous pass, we know this won't cause any overlaps.
+        chunks = []  # type: List[MemChunk]
+        for lma_word, _, data in merged_segments:
+            words = []
+            word = 0
+            for idx, byte in enumerate(data):
+                shift = 8 * (idx % 4)
+                word |= byte << shift
+                if idx % 4 == 3:
+                    words.append(word)
+                    word = 0
+            # idx here will be the index of the last byte. If data ended with a
+            # partial word, idx will be something other than 3 mod 4.
+            if idx % 4 != 3:
+                words.append(word)
+
+            chunks.append(MemChunk(lma_word, words))
+
+        return MemFile(32, chunks)
+
     def next_addr(self) -> int:
         '''Get the address directly above the top of the MemFile'''
         return 0 if not self.chunks else self.chunks[-1].next_addr()

@@ -20,8 +20,10 @@ from prince import prince, sbox  # type: ignore
 from secded_gen import ecc_encode_some  # type: ignore
 from secded_gen import load_secded_config
 
-ROM_BASE_WORD = 0x8000 // 4
+ROM_BASE_WORD = 0x80000000 // 4
 ROM_SIZE_WORDS = 8192
+
+print("Mem base addr:"+str(hex(ROM_BASE_WORD*4)))
 
 PRESENT_SBOX4 = [
     0xc, 0x5, 0x6, 0xb,
@@ -200,6 +202,8 @@ class Scrambler:
         assert len(flattened.chunks) == 1
         assert len(flattened.chunks[0].words) == initial_len
 
+        print("First 100 words in flattened:", [hex(i) for i in flattened.chunks[0].words[:100]])
+
         # Add the 8 trailing zero words. We do it here, rather than passing
         # rom_size_words to mem.flatten, to make sure that we see the error if
         # mem is too big.
@@ -319,6 +323,8 @@ class Scrambler:
         digest_bytes = hash_obj.read(bytes_per_word * num_digest_words)
         digest256 = int.from_bytes(digest_bytes, byteorder='little')
 
+        print("Digest256:", hex(digest256))
+
         # Chop the 256-bit digest into 32-bit words. These words should never
         # be read "unscrambled": the rom_ctrl checker reads them raw. We can
         # guarantee this by fiddling around with the top 7 bits (which are
@@ -355,12 +361,16 @@ def main() -> int:
     parser.add_argument('hjson')
     parser.add_argument('infile', type=argparse.FileType('rb'))
     parser.add_argument('outfile', type=argparse.FileType('w'))
+    parser.add_argument('elf_datawidth')
 
     args = parser.parse_args()
     scrambler = Scrambler.from_hjson_path(args.hjson, ROM_SIZE_WORDS)
 
     # Load the input ELF file
-    clr_mem = MemFile.load_elf32(args.infile, 4 * ROM_BASE_WORD)
+    if (args.hjson == 32):
+        clr_mem = MemFile.load_elf32(args.infile, 4 * ROM_BASE_WORD)
+    else:
+        clr_mem = MemFile.load_elf64(args.infile, 4 * ROM_BASE_WORD)
 
     # Flatten the file, padding with pseudo-random data and ensuring it's
     # exactly scrambler.rom_size_words words long.
