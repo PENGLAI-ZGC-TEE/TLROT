@@ -13,7 +13,7 @@ module rom_ctrl
   parameter bit [63:0]            RndCnstScrNonce = '0,
   parameter bit [127:0]           RndCnstScrKey = '0,
   // ROM size in bytes
-  parameter int                     = 32'h8000,
+  parameter int                   MemSizeRom = 32'h8000,
 
   // Disable all (de)scrambling operation. This disables both the scrambling block and the boot-time
   // checker. Don't use this in a real chip, but it's handy for small FPGA targets where we don't

@@ -298,7 +298,7 @@ module rot_top #(
 
   // assign unused_intr_vector = ^ intr_vector;
 
-  assign kmac_app_req[2] = kmac_pkg::APP_REQ_DEFAULT;
+  assign kmac_app_req[1] = kmac_pkg::APP_REQ_DEFAULT;
   
   // assign kmac_app_rsp_lc = kmac_app_rsp[2]; 
 
@@ -452,8 +452,8 @@ module rot_top #(
       .rom_cfg_i(ast_rom_cfg),
       .pwrmgr_data_o(rom_ctrl_pwrmgr_data),
       .keymgr_data_o(rom_ctrl_keymgr_data),
-      .kmac_data_o(kmac_app_req[1]),
-      .kmac_data_i(kmac_app_rsp[1]),
+      .kmac_data_o(kmac_app_req[2]),
+      .kmac_data_i(kmac_app_rsp[2]),
       // .kmac_data_o(kmac_app_req_rom),
       // .kmac_data_i(kmac_app_rsp_rom),
       .regs_tl_i(rom_ctrl_regs_tl_req),
