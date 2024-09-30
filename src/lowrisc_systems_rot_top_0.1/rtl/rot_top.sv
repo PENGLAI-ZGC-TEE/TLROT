@@ -206,12 +206,23 @@ module rot_top #(
   // localparam  kmac_pkg::lc_tx_t       lc_ctrl_lc_escalate_en = kmac_pkg::LC_TX_DEFAULT;
   localparam  lc_ctrl_pkg::lc_tx_t       lc_ctrl_lc_escalate_en = lc_ctrl_pkg::Off;
 
+  // puf_reg
+  logic [255:0]    puf_reg_key_o;
+  logic            key_valid_o;
+
   //Keymgr
   // edn_pkg::edn_req_t [1:0] edn0_edn_req;
   // edn_pkg::edn_rsp_t [1:0] edn0_edn_rsp;
   // otp_ctrl_pkg::otp_keymgr_key_t       otp_ctrl_otp_keymgr_key;
   // otp_ctrl_pkg::otp_device_id_t       keymgr_otp_device_id;
-  localparam otp_ctrl_pkg::otp_keymgr_key_t otp_ctrl_otp_keymgr_key = otp_ctrl_pkg::OTP_KEYMGR_KEY_DEFAULT;
+
+  otp_ctrl_pkg::otp_keymgr_key_t otp_ctrl_otp_keymgr_key;
+  always_comb begin
+    otp_ctrl_otp_keymgr_key = otp_ctrl_pkg::OTP_KEYMGR_KEY_DEFAULT;  
+    otp_ctrl_otp_keymgr_key.creator_root_key_share1_valid = key_valid_o;  
+    otp_ctrl_otp_keymgr_key.creator_root_key_share1 = puf_reg_key_o; 
+  end
+
   localparam otp_ctrl_pkg::otp_device_id_t keymgr_otp_device_id = 256'h48ecf6c738f0f108a5b08620695ffd4d48ecf6c738f0f108a5b08620695ffd4d;
   keymgr_pkg::hw_key_req_t       keymgr_aes_key;
   keymgr_pkg::hw_key_req_t       keymgr_kmac_key;
@@ -750,6 +761,9 @@ module rot_top #(
       // Inter-module signals
       .tl_i(puf_reg_tl_req),
       .tl_o(puf_reg_tl_rsp),
+
+      .key_valid_o(key_valid_o),
+      .puf_reg_key_o(puf_reg_key_o),
 
       // Clock and reset connections
       .clk_i (clk_i),

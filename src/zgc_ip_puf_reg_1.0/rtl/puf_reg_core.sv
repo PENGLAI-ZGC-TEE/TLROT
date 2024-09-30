@@ -5,7 +5,9 @@ module puf_reg_core (
   input        [255:0]    puf_reg_write_data_i,
   input                   puf_reg_write_en_i,
   input                   puf_reg_read_en_i,
-  output logic [255:0]    puf_reg_read_data_o
+  output logic [255:0]    puf_reg_read_data_o,
+  output                  key_valid_o,
+  output logic [255:0]    puf_reg_key_o
 );
 
   localparam int NumReg = 8;
@@ -28,6 +30,16 @@ module puf_reg_core (
       puf_reg_read_data_o <= '0;
     end else if (puf_reg_read_en_i) begin
       puf_reg_read_data_o <= puf_reg_storage[puf_reg_select_i];
+    end
+  end
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      puf_reg_key_o <= '0;
+      key_valid_o   <=  0;
+    end else if (puf_reg_storage[0] != '0) begin
+      puf_reg_key_o <=  1;
+      key_valid_o   <=  puf_reg_storage[0];
     end
   end
 

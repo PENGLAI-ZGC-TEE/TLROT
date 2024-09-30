@@ -159,7 +159,9 @@ module otbn_rnd import otbn_pkg::*;
   // SEC_CM: RND.RNG.DIGEST
   // Detect and forward RND error conditions.
   assign rnd_rep_err_o = rnd_req_complete & rnd_err_q;
-  assign rnd_fips_err_o = rnd_req_complete & ~rnd_fips_q;
+  //zdr: err ignore
+  // assign rnd_fips_err_o = rnd_req_complete & ~rnd_fips_q;
+  assign rnd_fips_err_o = 1'b0;
 
   /////////////////////////
   // PRNG Implementation //

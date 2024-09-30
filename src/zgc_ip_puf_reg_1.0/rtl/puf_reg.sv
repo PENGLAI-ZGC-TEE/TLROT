@@ -2,6 +2,9 @@ module puf_reg import puf_reg_reg_pkg::*; (
   input                           clk_i,
   input                           rst_ni,
 
+  output                  key_valid_o,
+  output logic [255:0]    puf_reg_key_o,
+
   // Bus interface
   input  tlul_pkg::tl_h2d_t       tl_i,
   output tlul_pkg::tl_d2h_t       tl_o
@@ -36,7 +39,9 @@ module puf_reg import puf_reg_reg_pkg::*; (
     .puf_reg_write_data_i(puf_reg_write_data),
     .puf_reg_write_en_i(puf_reg_write_en),
     .puf_reg_read_en_i(puf_reg_read_en),
-    .puf_reg_read_data_o(puf_reg_read_data)
+    .puf_reg_read_data_o(puf_reg_read_data),
+    .key_valid_o(key_valid_o),
+    .puf_reg_key_o(puf_reg_key_o)
   );
 
   // Connect registers to puf_reg core
