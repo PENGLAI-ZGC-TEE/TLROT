@@ -108,8 +108,10 @@ tlul_cmd_intg_gen #(.EnableDataIntgGen (EnableDataIntgGen)) u_cmd_intg_gen (
     .tl_o(tl_i_user)
   );
 
-tl_i_user.a_user.instr_type = ((tl_i.a_opcode == PutFullData)
+always_comb begin
+  tl_i_user.a_user.instr_type = ((tl_i.a_opcode == PutFullData)
                         | (tl_i.a_opcode == PutPartialData) ) ? prim_mubi_pkg::MuBi4False : prim_mubi_pkg::MuBi4True;
+end
 
 assign a_ready = tl_o.a_ready;
 
