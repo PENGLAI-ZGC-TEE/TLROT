@@ -18,7 +18,7 @@ module rot_top #(
   parameter bit KeymgrUseOtpSeedsInsteadOfFlash = 0,
   parameter bit KeymgrKmacEnMasking = 1,
   // parameters for rom_ctrl
-  parameter RomCtrlBootRomInitFile = "/nfs/home/zhangdongrong/Desktop/Nanhu/src/main/resources/TLROT/bootrom39.vmem",
+  parameter RomCtrlBootRomInitFile = "src/main/resources/TLROT/bootrom39.vmem",
   parameter bit SecRomCtrlDisableScrambling = 1'b0,
   // parameters for csrng
   parameter aes_pkg::sbox_impl_e CsrngSBoxImpl = aes_pkg::SBoxImplCanright,
