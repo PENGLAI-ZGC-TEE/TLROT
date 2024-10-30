@@ -85,7 +85,6 @@
 ../src/main/resources/TLROT/src/lowrisc_opentitan_top_earlgrey_flash_ctrl_pkg_0.1/lint/flash_ctrl_pkg.vlt
 ../src/main/resources/TLROT/src/lowrisc_ip_keymgr_0.1/lint/keymgr.vlt
 ../src/main/resources/TLROT/src/lowrisc_constants_top_pkg_0/rtl/top_pkg.sv
-../src/main/resources/TLROT/src/lowrisc_dv_pins_if_0/pins_if.sv
 ../src/main/resources/TLROT/src/lowrisc_ip_entropy_src_ack_sm_pkg_0.1/entropy_src_ack_sm_pkg.sv
 ../src/main/resources/TLROT/src/lowrisc_ip_entropy_src_main_sm_pkg_0.1/entropy_src_main_sm_pkg.sv
 ../src/main/resources/TLROT/src/lowrisc_ip_entropy_src_pkg_0.1/rtl/entropy_src_pkg.sv
@@ -357,7 +356,6 @@
 ../src/main/resources/TLROT/src/lowrisc_tlul_common_0.1/rtl/tlul_assert_multiple.sv
 ../src/main/resources/TLROT/src/lowrisc_ip_keymgr_pkg_0.1/rtl/keymgr_reg_pkg.sv
 ../src/main/resources/TLROT/src/lowrisc_ip_keymgr_pkg_0.1/rtl/keymgr_pkg.sv
-../src/main/resources/TLROT/src/lowrisc_prim_all_0.1/rtl/prim_clock_gating_sync.sv
 ../src/main/resources/TLROT/src/lowrisc_prim_all_0.1/rtl/prim_sram_arbiter.sv
 ../src/main/resources/TLROT/src/lowrisc_prim_all_0.1/rtl/prim_slicer.sv
 ../src/main/resources/TLROT/src/lowrisc_prim_all_0.1/rtl/prim_sync_reqack.sv
@@ -424,7 +422,7 @@
 ../src/main/resources/TLROT/src/lowrisc_ip_hmac_0.1/rtl/hmac_reg_top.sv
 ../src/main/resources/TLROT/src/lowrisc_ip_hmac_0.1/rtl/hmac_core.sv
 ../src/main/resources/TLROT/src/lowrisc_ip_hmac_0.1/rtl/hmac.sv
-../src/main/resources/TLROT/src/zgc_ip_sram/sram_array_1p1024x39m39.sv
+../src/main/resources/TLROT/src/zgc_ip_sram/sram_array_1p2048x39m39.sv
 ../src/main/resources/TLROT/src/zgc_ip_sram/sram_array_1p128x312m39.sv
 ../src/main/resources/TLROT/src/lowrisc_ip_otbn_0.1/rtl/otbn_controller.sv
 ../src/main/resources/TLROT/src/lowrisc_ip_otbn_0.1/rtl/otbn_decoder.sv

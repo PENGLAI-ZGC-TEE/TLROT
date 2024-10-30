@@ -76,8 +76,8 @@ module prim_generic_ram_1p import prim_ram_1p_pkg::*; #(
 
 // Conditional instantiation based on MaskWidth
 generate
-  if (MaskWidth == 1) begin : gen_array_1024x39
-    sram_array_1p1024x39m39 sram_imem (
+  if (MaskWidth == 1) begin : gen_array_2048x39
+    sram_array_1p2048x39m39 sram_imem (
       .clk_i(clk_i),
       .req_i(req_i),
       .write_i(write_i),

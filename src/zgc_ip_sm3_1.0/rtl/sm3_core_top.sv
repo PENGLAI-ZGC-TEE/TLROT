@@ -42,6 +42,16 @@ assign msg_inpt_rdy_re = 1'b1;
 assign cmprss_vld_re = cmprss_otpt_vld;
 assign cmprss_res_re = {8{cmprss_otpt_vld}};
 
+logic                       pad_otpt_ena;
+logic [`INPT_DW1:0]         pad_otpt_d;
+logic                       pad_otpt_lst;
+logic                       pad_otpt_vld;
+
+logic [`INPT_DW1:0]         expnd_otpt_wj;
+logic [`INPT_DW1:0]         expnd_otpt_wjj;
+logic                       expnd_otpt_lst;
+logic                       expnd_otpt_vld;
+
 sm3_pad_core U_sm3_pad_core(
 
     .clk                    (clk                    ),
@@ -54,11 +64,11 @@ sm3_pad_core U_sm3_pad_core(
 
     .msg_inpt_rdy_o         (msg_inpt_rdy           ),
 
-    .pad_otpt_ena_i         (int_if.pad_otpt_ena        ),
+    .pad_otpt_ena_i         (pad_otpt_ena        ),
 
-    .pad_otpt_d_o           (int_if.pad_otpt_d             ),
-    .pad_otpt_lst_o         (int_if.pad_otpt_lst           ),
-    .pad_otpt_vld_o         (int_if.pad_otpt_vld           )
+    .pad_otpt_d_o           (pad_otpt_d             ),
+    .pad_otpt_lst_o         (pad_otpt_lst           ),
+    .pad_otpt_vld_o         (pad_otpt_vld           )
 );
 
 sm3_expnd_core U_sm3_expnd_core(
@@ -67,15 +77,15 @@ sm3_expnd_core U_sm3_expnd_core(
     .rst_n                  (rst_n                  ),
 
 
-    .pad_inpt_d_i               ( int_if.pad_otpt_d                    ),
-    .pad_inpt_vld_i             ( int_if.pad_otpt_vld                  ),
-    .pad_inpt_lst_i             ( int_if.pad_otpt_lst                  ),
+    .pad_inpt_d_i               ( pad_otpt_d                    ),
+    .pad_inpt_vld_i             ( pad_otpt_vld                  ),
+    .pad_inpt_lst_i             ( pad_otpt_lst                  ),
 
-    .pad_inpt_rdy_o             ( int_if.pad_otpt_ena                  ),
-    .expnd_otpt_wj_o            ( int_if.expnd_otpt_wj                 ),
-    .expnd_otpt_wjj_o           ( int_if.expnd_otpt_wjj                ),
-    .expnd_otpt_lst_o           ( int_if.expnd_otpt_lst                ),
-    .expnd_otpt_vld_o           ( int_if.expnd_otpt_vld                )
+    .pad_inpt_rdy_o             ( pad_otpt_ena                  ),
+    .expnd_otpt_wj_o            ( expnd_otpt_wj                 ),
+    .expnd_otpt_wjj_o           ( expnd_otpt_wjj                ),
+    .expnd_otpt_lst_o           ( expnd_otpt_lst                ),
+    .expnd_otpt_vld_o           ( expnd_otpt_vld                )
 );
 
 sm3_cmprss_core U_sm3_cmprss_core(
@@ -83,10 +93,10 @@ sm3_cmprss_core U_sm3_cmprss_core(
     .rst_n                  (rst_n                  ),
 
 
-    .expnd_inpt_wj_i            ( int_if.expnd_otpt_wj                  ),
-    .expnd_inpt_wjj_i           ( int_if.expnd_otpt_wjj                  ),
-    .expnd_inpt_lst_i           ( int_if.expnd_otpt_lst                  ),
-    .expnd_inpt_vld_i           ( int_if.expnd_otpt_vld                  ),
+    .expnd_inpt_wj_i            ( expnd_otpt_wj                  ),
+    .expnd_inpt_wjj_i           ( expnd_otpt_wjj                  ),
+    .expnd_inpt_lst_i           ( expnd_otpt_lst                  ),
+    .expnd_inpt_vld_i           ( expnd_otpt_vld                  ),
 
     .cmprss_otpt_res_o          ( cmprss_otpt_res               ),
     .cmprss_otpt_vld_o          ( cmprss_otpt_vld               )

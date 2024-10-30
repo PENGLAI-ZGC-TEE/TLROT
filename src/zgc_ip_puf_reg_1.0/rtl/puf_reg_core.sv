@@ -6,7 +6,7 @@ module puf_reg_core (
   input                   puf_reg_write_en_i,
   input                   puf_reg_read_en_i,
   output logic [255:0]    puf_reg_read_data_o,
-  output                  key_valid_o,
+  output logic            key_valid_o,
   output logic [255:0]    puf_reg_key_o
 );
 

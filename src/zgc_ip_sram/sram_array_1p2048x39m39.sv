@@ -1,6 +1,6 @@
-module sram_array_1p1024x39m39(
+module sram_array_1p2048x39m39(
   input logic         clk_i,
-  input logic [9:0]   addr_i,
+  input logic [10:0]   addr_i,
   input logic         req_i,
   input logic         write_i,
   input logic         wmask_i,

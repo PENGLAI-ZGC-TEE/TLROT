@@ -73,7 +73,7 @@ module xbar_main_rot (
   output tlul_pkg::tl_h2d_t tl_pcr_o,
   input  tlul_pkg::tl_d2h_t tl_pcr_i,
 
-  input prim_mubi_pkg::mubi4_t scanmode_i
+  input  scanmode_i
 );
 
   import tlul_pkg::*;

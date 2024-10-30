@@ -1126,14 +1126,14 @@ module pwrmgr_reg_top (
     .re     (wake_info_re),
     .we     (wake_info_we),
     .wd     (wake_info_abort_wd),
-    .d      (hw2reg.wake_info.abort.d),
+    .d      (hw2reg.wake_info.abort_zdr.d),
     .qre    (),
     .qe     (wake_info_flds_we[2]),
-    .q      (reg2hw.wake_info.abort.q),
+    .q      (reg2hw.wake_info.abort_zdr.q),
     .ds     (),
     .qs     (wake_info_abort_qs)
   );
-  assign reg2hw.wake_info.abort.qe = wake_info_qe;
+  assign reg2hw.wake_info.abort_zdr.qe = wake_info_qe;
 
 
   // R[fault_status]: V(False)

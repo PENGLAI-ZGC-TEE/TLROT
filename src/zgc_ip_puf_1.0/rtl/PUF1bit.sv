@@ -32,7 +32,7 @@ module PUF1bit(
 `ifdef SYNTHESIS
 // `define TEST
 // `ifdef TEST
-parameter NUM_LUTS = 5;
+parameter NUM_LUTS = 15;
 parameter  NUM_OSCILLATORS = 128;
 
 wire [127:0]  mux_in_a;      //RO output to MUX
