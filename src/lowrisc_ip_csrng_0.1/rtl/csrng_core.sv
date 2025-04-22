@@ -1753,7 +1753,7 @@ module csrng_core import csrng_pkg::*; #(
 
   // Assert that when AES Halt is active, AES is not active.
   `ASSERT(AesNotActiveWhileCsAesHaltActive_A, cs_aes_halt_active |-> !aes_active_d)
-
+  // `ASSERT(IntrCsCmdReqDoneNoRise_A, !$rose(intr_cs_cmd_req_done_o) |-> 1'b0)
   always_ff @(posedge clk_i, negedge rst_ni) begin
     if (!rst_ni) begin
       aes_active_q <= '0;

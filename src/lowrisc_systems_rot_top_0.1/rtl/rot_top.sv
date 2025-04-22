@@ -257,7 +257,8 @@ module rot_top #(
   csrng_pkg::csrng_rsp_t [1:0] csrng_csrng_cmd_rsp;
   // prim_mubi_pkg::mubi8_t       csrng_otp_en_csrng_sw_app_read;
   localparam  MuBi8False = 8'h69;
-  localparam prim_mubi_pkg::mubi8_t       csrng_otp_en_csrng_sw_app_read = prim_mubi_pkg::mubi8_t'(MuBi8False);
+  localparam  MuBi8True = 8'h96;
+  localparam prim_mubi_pkg::mubi8_t       csrng_otp_en_csrng_sw_app_read = prim_mubi_pkg::mubi8_t'(MuBi8True);
   // lc_ctrl_pkg::lc_tx_t       lc_ctrl_lc_hw_debug_en;
   localparam lc_ctrl_pkg::lc_tx_t lc_ctrl_lc_hw_debug_en = lc_ctrl_pkg::On;
 
