@@ -76,7 +76,7 @@ module rot_top #(
     input entropy_src_pkg::entropy_src_rng_rsp_t       es_rng_rsp_i,
     // input prim_mubi_pkg::mubi8_t       entropy_src_otp_en_entropy_src_fw_read,
     // input prim_mubi_pkg::mubi8_t       entropy_src_otp_en_entropy_src_fw_over,
-    output logic       es_rng_fips_o, 
+    output logic       es_rng_fips_o,
     // input tlul_pkg::tl_h2d_t       entropy_src_tl_req,
     // output tlul_pkg::tl_d2h_t       entropy_src_tl_rsp,
 
@@ -129,7 +129,7 @@ module rot_top #(
   import top_earlgrey_rnd_cnst_rot_pkg::*;
 
   //local parameter
-  
+
 
   // Signals
   //tlul signle
@@ -176,7 +176,7 @@ module rot_top #(
   // prim_alert_pkg::alert_rx_t [NAlerts-1:0]  alert_rx;
   localparam prim_alert_pkg::alert_rx_t [NAlerts-1:0] alert_rx_i = {NAlerts{prim_alert_pkg::ALERT_RX_DEFAULT}};
 
-  
+
   // Interrupt source list
   // logic [16:0]  intr_vector;
   // logic  unused_intr_vector;
@@ -218,9 +218,9 @@ module rot_top #(
 
   otp_ctrl_pkg::otp_keymgr_key_t otp_ctrl_otp_keymgr_key;
   always_comb begin
-    otp_ctrl_otp_keymgr_key = otp_ctrl_pkg::OTP_KEYMGR_KEY_DEFAULT;  
-    otp_ctrl_otp_keymgr_key.creator_root_key_share1_valid = key_valid_o;  
-    otp_ctrl_otp_keymgr_key.creator_root_key_share1 = puf_reg_key_o; 
+    otp_ctrl_otp_keymgr_key = otp_ctrl_pkg::OTP_KEYMGR_KEY_DEFAULT;
+    otp_ctrl_otp_keymgr_key.creator_root_key_share1_valid = key_valid_o;
+    otp_ctrl_otp_keymgr_key.creator_root_key_share1 = puf_reg_key_o;
   end
 
   localparam otp_ctrl_pkg::otp_device_id_t keymgr_otp_device_id = 256'h48ecf6c738f0f108a5b08620695ffd4d48ecf6c738f0f108a5b08620695ffd4d;
@@ -273,7 +273,7 @@ module rot_top #(
   entropy_src_pkg::cs_aes_halt_rsp_t       csrng_cs_aes_halt_rsp;
   // entropy_src_pkg::entropy_src_rng_req_t       es_rng_req_o;
   entropy_src_pkg::entropy_src_rng_rsp_t       es_rng_rsp_i_puf;
-  // localparam entropy_src_pkg::entropy_src_rng_rsp_t       es_rng_rsp_i = entropy_src_pkg::ENTROPY_SRC_RNG_RSP_DEFAULT; 
+  // localparam entropy_src_pkg::entropy_src_rng_rsp_t       es_rng_rsp_i = entropy_src_pkg::ENTROPY_SRC_RNG_RSP_DEFAULT;
   // prim_mubi_pkg::mubi8_t       entropy_src_otp_en_entropy_src_fw_read;
   // prim_mubi_pkg::mubi8_t       entropy_src_otp_en_entropy_src_fw_over;
   localparam prim_mubi_pkg::mubi8_t       entropy_src_otp_en_entropy_src_fw_read = prim_mubi_pkg::mubi8_t'(MuBi8False);
@@ -303,21 +303,21 @@ module rot_top #(
   //   intr_keymgr_op_done,
   //   intr_edn0_edn_cmd_req_done,
   //   intr_edn0_edn_fatal_err,
-  //   intr_entropy_src_es_fatal_err, 
-  //   intr_entropy_src_es_observe_fifo_ready, 
-  //   intr_entropy_src_es_health_test_failed, 
-  //   intr_entropy_src_es_entropy_valid, 
-  //   intr_csrng_cs_fatal_err, 
-  //   intr_csrng_cs_hw_inst_exc, 
-  //   intr_csrng_cs_entropy_req, 
+  //   intr_entropy_src_es_fatal_err,
+  //   intr_entropy_src_es_observe_fifo_ready,
+  //   intr_entropy_src_es_health_test_failed,
+  //   intr_entropy_src_es_entropy_valid,
+  //   intr_csrng_cs_fatal_err,
+  //   intr_csrng_cs_hw_inst_exc,
+  //   intr_csrng_cs_entropy_req,
   //   intr_csrng_cs_cmd_req_done
   // };
 
   // assign unused_intr_vector = ^ intr_vector;
 
   assign kmac_app_req[1] = kmac_pkg::APP_REQ_DEFAULT;
-  
-  // assign kmac_app_rsp_lc = kmac_app_rsp[2]; 
+
+  // assign kmac_app_rsp_lc = kmac_app_rsp[2];
 
   // assign csrng_csrng_cmd_req[1] = rot_top_csrng_csrng_cmd_req;
   // assign rot_top_csrng_csrng_cmd_rsp = csrng_csrng_cmd_rsp[1];
@@ -397,7 +397,7 @@ module rot_top #(
       .clk_i,
       .rst_ni
   );
-  
+
   kmac #(
     .AlertAsyncOn(2'b11),
     .EnMasking(KmacEnMasking),
@@ -441,7 +441,7 @@ module rot_top #(
       .rst_ni,
       .rst_edn_ni
   );
-  
+
   keymgr #(
     .AlertAsyncOn(2'b11),
     .UseOtpSeedsInsteadOfFlash(KeymgrUseOtpSeedsInsteadOfFlash),
@@ -589,7 +589,7 @@ module rot_top #(
   always_comb begin
     if (!rng_mode) begin  // puf in rng mode
       es_rng_rsp_i_puf.rng_valid = rng4bit_done;
-      es_rng_rsp_i_puf.rng_b = rng4bit; 
+      es_rng_rsp_i_puf.rng_b = rng4bit;
     end else begin
       // puf in puf mode, rng from lfsr
       es_rng_rsp_i_puf = es_rng_rsp_i;
@@ -825,7 +825,7 @@ module rot_top #(
     // port: tl_edn0
     .tl_edn0_o(edn0_tl_req),
     .tl_edn0_i(edn0_tl_rsp),
-    
+
     // port: tl_otbn
     .tl_otbn_o(otbn_tl_req),
     .tl_otbn_i(otbn_tl_rsp),
@@ -863,7 +863,7 @@ module rot_top #(
     .tl_pcr_i(pcr_tl_rsp)
 
   );
-    
+
 
 endmodule
 

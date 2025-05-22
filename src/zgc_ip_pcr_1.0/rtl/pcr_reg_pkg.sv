@@ -6,8 +6,13 @@
 
 package pcr_reg_pkg;
 
+  // Param list
+  parameter int NumDigestWords = 16;
+  parameter int NumKeyWords = 32;
+  parameter int NumAlerts = 1;
+
   // Address widths within the block
-  parameter int BlockAw = 7;
+  parameter int BlockAw = 13;
 
   ////////////////////////////
   // Typedefs for registers //
@@ -16,65 +21,464 @@ package pcr_reg_pkg;
   typedef struct packed {
     struct packed {
       logic        q;
-    } rd_en;
+    } hmac_err;
     struct packed {
       logic        q;
-    } wr_en;
+    } fifo_empty;
     struct packed {
-      logic [4:0]  q;
-    } select;
-  } pcr_reg2hw_ctrl_reg_t;
+      logic        q;
+    } hmac_done;
+  } pcr_reg2hw_intr_state_reg_t;
+
+  typedef struct packed {
+    struct packed {
+      logic        q;
+    } hmac_err;
+    struct packed {
+      logic        q;
+    } fifo_empty;
+    struct packed {
+      logic        q;
+    } hmac_done;
+  } pcr_reg2hw_intr_enable_reg_t;
+
+  typedef struct packed {
+    struct packed {
+      logic        q;
+      logic        qe;
+    } hmac_err;
+    struct packed {
+      logic        q;
+      logic        qe;
+    } fifo_empty;
+    struct packed {
+      logic        q;
+      logic        qe;
+    } hmac_done;
+  } pcr_reg2hw_intr_test_reg_t;
+
+  typedef struct packed {
+    logic        q;
+    logic        qe;
+  } pcr_reg2hw_alert_test_reg_t;
+
+  typedef struct packed {
+    struct packed {
+      logic [5:0]  q;
+      logic        qe;
+    } key_length;
+    struct packed {
+      logic [3:0]  q;
+      logic        qe;
+    } digest_size;
+    struct packed {
+      logic        q;
+      logic        qe;
+    } key_swap;
+    struct packed {
+      logic        q;
+      logic        qe;
+    } digest_swap;
+    struct packed {
+      logic        q;
+      logic        qe;
+    } endian_swap;
+    struct packed {
+      logic        q;
+      logic        qe;
+    } sha_en;
+    struct packed {
+      logic        q;
+      logic        qe;
+    } hmac_en;
+  } pcr_reg2hw_cfg_reg_t;
+
+  typedef struct packed {
+    struct packed {
+      logic        q;
+      logic        qe;
+    } hash_continue;
+    struct packed {
+      logic        q;
+      logic        qe;
+    } hash_stop;
+    struct packed {
+      logic        q;
+      logic        qe;
+    } hash_process;
+    struct packed {
+      logic        q;
+      logic        qe;
+    } hash_start;
+  } pcr_reg2hw_cmd_reg_t;
 
   typedef struct packed {
     logic [31:0] q;
-  } pcr_reg2hw_pcr_wr_mreg_t;
+    logic        qe;
+  } pcr_reg2hw_wipe_secret_reg_t;
+
+  typedef struct packed {
+    logic [31:0] q;
+    logic        qe;
+  } pcr_reg2hw_key_mreg_t;
+
+  typedef struct packed {
+    logic [31:0] q;
+    logic        qe;
+  } pcr_reg2hw_digest_mreg_t;
+
+  typedef struct packed {
+    struct packed {
+      logic [7:0]  q;
+    } locality;
+    struct packed {
+      logic        q;
+    } event_en;
+    struct packed {
+      logic        q;
+    } extend_en;
+    struct packed {
+      logic        q;
+    } reset_en;
+    struct packed {
+      logic        q;
+    } rd_en;
+    struct packed {
+      logic [4:0]  q;
+    } select;
+  } pcr_reg2hw_pcr_ctrl_reg_t;
+
+  typedef struct packed {
+    logic [31:0] q;
+    logic        qe;
+  } pcr_reg2hw_msg_length_lower_reg_t;
+
+  typedef struct packed {
+    logic [31:0] q;
+    logic        qe;
+  } pcr_reg2hw_msg_length_upper_reg_t;
+
+  typedef struct packed {
+    struct packed {
+      logic        d;
+      logic        de;
+    } hmac_done;
+    struct packed {
+      logic        d;
+      logic        de;
+    } fifo_empty;
+    struct packed {
+      logic        d;
+      logic        de;
+    } hmac_err;
+  } pcr_hw2reg_intr_state_reg_t;
+
+  typedef struct packed {
+    struct packed {
+      logic        d;
+    } hmac_en;
+    struct packed {
+      logic        d;
+    } sha_en;
+    struct packed {
+      logic        d;
+    } endian_swap;
+    struct packed {
+      logic        d;
+    } digest_swap;
+    struct packed {
+      logic        d;
+    } key_swap;
+    struct packed {
+      logic [3:0]  d;
+    } digest_size;
+    struct packed {
+      logic [5:0]  d;
+    } key_length;
+  } pcr_hw2reg_cfg_reg_t;
+
+  typedef struct packed {
+    struct packed {
+      logic        d;
+    } hmac_idle;
+    struct packed {
+      logic        d;
+    } fifo_empty;
+    struct packed {
+      logic        d;
+    } fifo_full;
+    struct packed {
+      logic [5:0]  d;
+    } fifo_depth;
+  } pcr_hw2reg_status_reg_t;
+
+  typedef struct packed {
+    logic [31:0] d;
+    logic        de;
+  } pcr_hw2reg_err_code_reg_t;
+
+  typedef struct packed {
+    logic [31:0] d;
+  } pcr_hw2reg_key_mreg_t;
+
+  typedef struct packed {
+    logic [31:0] d;
+  } pcr_hw2reg_digest_mreg_t;
+
+  typedef struct packed {
+    logic        d;
+    logic        de;
+  } pcr_hw2reg_pcr_status_reg_t;
 
   typedef struct packed {
     logic [31:0] d;
     logic        de;
   } pcr_hw2reg_pcr_rd_mreg_t;
 
+  typedef struct packed {
+    logic [31:0] d;
+  } pcr_hw2reg_msg_length_lower_reg_t;
+
+  typedef struct packed {
+    logic [31:0] d;
+  } pcr_hw2reg_msg_length_upper_reg_t;
+
   // Register -> HW type
   typedef struct packed {
-    pcr_reg2hw_ctrl_reg_t ctrl; // [262:256]
-    pcr_reg2hw_pcr_wr_mreg_t [7:0] pcr_wr; // [255:0]
+    pcr_reg2hw_intr_state_reg_t intr_state; // [1743:1741]
+    pcr_reg2hw_intr_enable_reg_t intr_enable; // [1740:1738]
+    pcr_reg2hw_intr_test_reg_t intr_test; // [1737:1732]
+    pcr_reg2hw_alert_test_reg_t alert_test; // [1731:1730]
+    pcr_reg2hw_cfg_reg_t cfg; // [1729:1708]
+    pcr_reg2hw_cmd_reg_t cmd; // [1707:1700]
+    pcr_reg2hw_wipe_secret_reg_t wipe_secret; // [1699:1667]
+    pcr_reg2hw_key_mreg_t [31:0] key; // [1666:611]
+    pcr_reg2hw_digest_mreg_t [15:0] digest; // [610:83]
+    pcr_reg2hw_pcr_ctrl_reg_t pcr_ctrl; // [82:66]
+    pcr_reg2hw_msg_length_lower_reg_t msg_length_lower; // [65:33]
+    pcr_reg2hw_msg_length_upper_reg_t msg_length_upper; // [32:0]
   } pcr_reg2hw_t;
 
   // HW -> register type
   typedef struct packed {
-    pcr_hw2reg_pcr_rd_mreg_t [7:0] pcr_rd; // [263:0]
+    pcr_hw2reg_intr_state_reg_t intr_state; // [1928:1923]
+    pcr_hw2reg_cfg_reg_t cfg; // [1922:1908]
+    pcr_hw2reg_status_reg_t status; // [1907:1899]
+    pcr_hw2reg_err_code_reg_t err_code; // [1898:1866]
+    pcr_hw2reg_key_mreg_t [31:0] key; // [1865:842]
+    pcr_hw2reg_digest_mreg_t [15:0] digest; // [841:330]
+    pcr_hw2reg_pcr_status_reg_t pcr_status; // [329:328]
+    pcr_hw2reg_pcr_rd_mreg_t [7:0] pcr_rd; // [327:64]
+    pcr_hw2reg_msg_length_lower_reg_t msg_length_lower; // [63:32]
+    pcr_hw2reg_msg_length_upper_reg_t msg_length_upper; // [31:0]
   } pcr_hw2reg_t;
 
   // Register offsets
-  parameter logic [BlockAw-1:0] PCR_CTRL_OFFSET = 7'h 0;
-  parameter logic [BlockAw-1:0] PCR_PCR_WR_0_OFFSET = 7'h 4;
-  parameter logic [BlockAw-1:0] PCR_PCR_WR_1_OFFSET = 7'h 8;
-  parameter logic [BlockAw-1:0] PCR_PCR_WR_2_OFFSET = 7'h c;
-  parameter logic [BlockAw-1:0] PCR_PCR_WR_3_OFFSET = 7'h 10;
-  parameter logic [BlockAw-1:0] PCR_PCR_WR_4_OFFSET = 7'h 14;
-  parameter logic [BlockAw-1:0] PCR_PCR_WR_5_OFFSET = 7'h 18;
-  parameter logic [BlockAw-1:0] PCR_PCR_WR_6_OFFSET = 7'h 1c;
-  parameter logic [BlockAw-1:0] PCR_PCR_WR_7_OFFSET = 7'h 20;
-  parameter logic [BlockAw-1:0] PCR_PCR_RD_0_OFFSET = 7'h 24;
-  parameter logic [BlockAw-1:0] PCR_PCR_RD_1_OFFSET = 7'h 28;
-  parameter logic [BlockAw-1:0] PCR_PCR_RD_2_OFFSET = 7'h 2c;
-  parameter logic [BlockAw-1:0] PCR_PCR_RD_3_OFFSET = 7'h 30;
-  parameter logic [BlockAw-1:0] PCR_PCR_RD_4_OFFSET = 7'h 34;
-  parameter logic [BlockAw-1:0] PCR_PCR_RD_5_OFFSET = 7'h 38;
-  parameter logic [BlockAw-1:0] PCR_PCR_RD_6_OFFSET = 7'h 3c;
-  parameter logic [BlockAw-1:0] PCR_PCR_RD_7_OFFSET = 7'h 40;
+  parameter logic [BlockAw-1:0] PCR_INTR_STATE_OFFSET = 13'h 0;
+  parameter logic [BlockAw-1:0] PCR_INTR_ENABLE_OFFSET = 13'h 4;
+  parameter logic [BlockAw-1:0] PCR_INTR_TEST_OFFSET = 13'h 8;
+  parameter logic [BlockAw-1:0] PCR_ALERT_TEST_OFFSET = 13'h c;
+  parameter logic [BlockAw-1:0] PCR_CFG_OFFSET = 13'h 10;
+  parameter logic [BlockAw-1:0] PCR_CMD_OFFSET = 13'h 14;
+  parameter logic [BlockAw-1:0] PCR_STATUS_OFFSET = 13'h 18;
+  parameter logic [BlockAw-1:0] PCR_ERR_CODE_OFFSET = 13'h 1c;
+  parameter logic [BlockAw-1:0] PCR_WIPE_SECRET_OFFSET = 13'h 20;
+  parameter logic [BlockAw-1:0] PCR_KEY_0_OFFSET = 13'h 24;
+  parameter logic [BlockAw-1:0] PCR_KEY_1_OFFSET = 13'h 28;
+  parameter logic [BlockAw-1:0] PCR_KEY_2_OFFSET = 13'h 2c;
+  parameter logic [BlockAw-1:0] PCR_KEY_3_OFFSET = 13'h 30;
+  parameter logic [BlockAw-1:0] PCR_KEY_4_OFFSET = 13'h 34;
+  parameter logic [BlockAw-1:0] PCR_KEY_5_OFFSET = 13'h 38;
+  parameter logic [BlockAw-1:0] PCR_KEY_6_OFFSET = 13'h 3c;
+  parameter logic [BlockAw-1:0] PCR_KEY_7_OFFSET = 13'h 40;
+  parameter logic [BlockAw-1:0] PCR_KEY_8_OFFSET = 13'h 44;
+  parameter logic [BlockAw-1:0] PCR_KEY_9_OFFSET = 13'h 48;
+  parameter logic [BlockAw-1:0] PCR_KEY_10_OFFSET = 13'h 4c;
+  parameter logic [BlockAw-1:0] PCR_KEY_11_OFFSET = 13'h 50;
+  parameter logic [BlockAw-1:0] PCR_KEY_12_OFFSET = 13'h 54;
+  parameter logic [BlockAw-1:0] PCR_KEY_13_OFFSET = 13'h 58;
+  parameter logic [BlockAw-1:0] PCR_KEY_14_OFFSET = 13'h 5c;
+  parameter logic [BlockAw-1:0] PCR_KEY_15_OFFSET = 13'h 60;
+  parameter logic [BlockAw-1:0] PCR_KEY_16_OFFSET = 13'h 64;
+  parameter logic [BlockAw-1:0] PCR_KEY_17_OFFSET = 13'h 68;
+  parameter logic [BlockAw-1:0] PCR_KEY_18_OFFSET = 13'h 6c;
+  parameter logic [BlockAw-1:0] PCR_KEY_19_OFFSET = 13'h 70;
+  parameter logic [BlockAw-1:0] PCR_KEY_20_OFFSET = 13'h 74;
+  parameter logic [BlockAw-1:0] PCR_KEY_21_OFFSET = 13'h 78;
+  parameter logic [BlockAw-1:0] PCR_KEY_22_OFFSET = 13'h 7c;
+  parameter logic [BlockAw-1:0] PCR_KEY_23_OFFSET = 13'h 80;
+  parameter logic [BlockAw-1:0] PCR_KEY_24_OFFSET = 13'h 84;
+  parameter logic [BlockAw-1:0] PCR_KEY_25_OFFSET = 13'h 88;
+  parameter logic [BlockAw-1:0] PCR_KEY_26_OFFSET = 13'h 8c;
+  parameter logic [BlockAw-1:0] PCR_KEY_27_OFFSET = 13'h 90;
+  parameter logic [BlockAw-1:0] PCR_KEY_28_OFFSET = 13'h 94;
+  parameter logic [BlockAw-1:0] PCR_KEY_29_OFFSET = 13'h 98;
+  parameter logic [BlockAw-1:0] PCR_KEY_30_OFFSET = 13'h 9c;
+  parameter logic [BlockAw-1:0] PCR_KEY_31_OFFSET = 13'h a0;
+  parameter logic [BlockAw-1:0] PCR_DIGEST_0_OFFSET = 13'h a4;
+  parameter logic [BlockAw-1:0] PCR_DIGEST_1_OFFSET = 13'h a8;
+  parameter logic [BlockAw-1:0] PCR_DIGEST_2_OFFSET = 13'h ac;
+  parameter logic [BlockAw-1:0] PCR_DIGEST_3_OFFSET = 13'h b0;
+  parameter logic [BlockAw-1:0] PCR_DIGEST_4_OFFSET = 13'h b4;
+  parameter logic [BlockAw-1:0] PCR_DIGEST_5_OFFSET = 13'h b8;
+  parameter logic [BlockAw-1:0] PCR_DIGEST_6_OFFSET = 13'h bc;
+  parameter logic [BlockAw-1:0] PCR_DIGEST_7_OFFSET = 13'h c0;
+  parameter logic [BlockAw-1:0] PCR_DIGEST_8_OFFSET = 13'h c4;
+  parameter logic [BlockAw-1:0] PCR_DIGEST_9_OFFSET = 13'h c8;
+  parameter logic [BlockAw-1:0] PCR_DIGEST_10_OFFSET = 13'h cc;
+  parameter logic [BlockAw-1:0] PCR_DIGEST_11_OFFSET = 13'h d0;
+  parameter logic [BlockAw-1:0] PCR_DIGEST_12_OFFSET = 13'h d4;
+  parameter logic [BlockAw-1:0] PCR_DIGEST_13_OFFSET = 13'h d8;
+  parameter logic [BlockAw-1:0] PCR_DIGEST_14_OFFSET = 13'h dc;
+  parameter logic [BlockAw-1:0] PCR_DIGEST_15_OFFSET = 13'h e0;
+  parameter logic [BlockAw-1:0] PCR_PCR_CTRL_OFFSET = 13'h e4;
+  parameter logic [BlockAw-1:0] PCR_PCR_STATUS_OFFSET = 13'h e8;
+  parameter logic [BlockAw-1:0] PCR_PCR_RD_0_OFFSET = 13'h ec;
+  parameter logic [BlockAw-1:0] PCR_PCR_RD_1_OFFSET = 13'h f0;
+  parameter logic [BlockAw-1:0] PCR_PCR_RD_2_OFFSET = 13'h f4;
+  parameter logic [BlockAw-1:0] PCR_PCR_RD_3_OFFSET = 13'h f8;
+  parameter logic [BlockAw-1:0] PCR_PCR_RD_4_OFFSET = 13'h fc;
+  parameter logic [BlockAw-1:0] PCR_PCR_RD_5_OFFSET = 13'h 100;
+  parameter logic [BlockAw-1:0] PCR_PCR_RD_6_OFFSET = 13'h 104;
+  parameter logic [BlockAw-1:0] PCR_PCR_RD_7_OFFSET = 13'h 108;
+  parameter logic [BlockAw-1:0] PCR_MSG_LENGTH_LOWER_OFFSET = 13'h 10c;
+  parameter logic [BlockAw-1:0] PCR_MSG_LENGTH_UPPER_OFFSET = 13'h 110;
+
+  // Reset values for hwext registers and their fields
+  parameter logic [2:0] PCR_INTR_TEST_RESVAL = 3'h 0;
+  parameter logic [0:0] PCR_INTR_TEST_HMAC_DONE_RESVAL = 1'h 0;
+  parameter logic [0:0] PCR_INTR_TEST_FIFO_EMPTY_RESVAL = 1'h 0;
+  parameter logic [0:0] PCR_INTR_TEST_HMAC_ERR_RESVAL = 1'h 0;
+  parameter logic [0:0] PCR_ALERT_TEST_RESVAL = 1'h 0;
+  parameter logic [0:0] PCR_ALERT_TEST_FATAL_FAULT_RESVAL = 1'h 0;
+  parameter logic [14:0] PCR_CFG_RESVAL = 15'h 4100;
+  parameter logic [0:0] PCR_CFG_ENDIAN_SWAP_RESVAL = 1'h 0;
+  parameter logic [0:0] PCR_CFG_DIGEST_SWAP_RESVAL = 1'h 0;
+  parameter logic [0:0] PCR_CFG_KEY_SWAP_RESVAL = 1'h 0;
+  parameter logic [3:0] PCR_CFG_DIGEST_SIZE_RESVAL = 4'h 8;
+  parameter logic [5:0] PCR_CFG_KEY_LENGTH_RESVAL = 6'h 20;
+  parameter logic [3:0] PCR_CMD_RESVAL = 4'h 0;
+  parameter logic [9:0] PCR_STATUS_RESVAL = 10'h 3;
+  parameter logic [0:0] PCR_STATUS_HMAC_IDLE_RESVAL = 1'h 1;
+  parameter logic [0:0] PCR_STATUS_FIFO_EMPTY_RESVAL = 1'h 1;
+  parameter logic [31:0] PCR_WIPE_SECRET_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_0_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_1_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_2_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_3_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_4_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_5_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_6_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_7_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_8_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_9_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_10_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_11_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_12_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_13_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_14_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_15_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_16_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_17_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_18_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_19_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_20_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_21_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_22_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_23_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_24_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_25_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_26_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_27_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_28_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_29_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_30_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_KEY_31_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_DIGEST_0_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_DIGEST_1_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_DIGEST_2_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_DIGEST_3_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_DIGEST_4_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_DIGEST_5_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_DIGEST_6_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_DIGEST_7_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_DIGEST_8_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_DIGEST_9_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_DIGEST_10_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_DIGEST_11_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_DIGEST_12_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_DIGEST_13_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_DIGEST_14_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_DIGEST_15_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_MSG_LENGTH_LOWER_RESVAL = 32'h 0;
+  parameter logic [31:0] PCR_MSG_LENGTH_UPPER_RESVAL = 32'h 0;
+
+  // Window parameters
+  parameter logic [BlockAw-1:0] PCR_MSG_FIFO_OFFSET = 13'h 1000;
+  parameter int unsigned        PCR_MSG_FIFO_SIZE   = 'h 1000;
+  parameter int unsigned        PCR_MSG_FIFO_IDX    = 0;
 
   // Register index
   typedef enum int {
-    PCR_CTRL,
-    PCR_PCR_WR_0,
-    PCR_PCR_WR_1,
-    PCR_PCR_WR_2,
-    PCR_PCR_WR_3,
-    PCR_PCR_WR_4,
-    PCR_PCR_WR_5,
-    PCR_PCR_WR_6,
-    PCR_PCR_WR_7,
+    PCR_INTR_STATE,
+    PCR_INTR_ENABLE,
+    PCR_INTR_TEST,
+    PCR_ALERT_TEST,
+    PCR_CFG,
+    PCR_CMD,
+    PCR_STATUS,
+    PCR_ERR_CODE,
+    PCR_WIPE_SECRET,
+    PCR_KEY_0,
+    PCR_KEY_1,
+    PCR_KEY_2,
+    PCR_KEY_3,
+    PCR_KEY_4,
+    PCR_KEY_5,
+    PCR_KEY_6,
+    PCR_KEY_7,
+    PCR_KEY_8,
+    PCR_KEY_9,
+    PCR_KEY_10,
+    PCR_KEY_11,
+    PCR_KEY_12,
+    PCR_KEY_13,
+    PCR_KEY_14,
+    PCR_KEY_15,
+    PCR_KEY_16,
+    PCR_KEY_17,
+    PCR_KEY_18,
+    PCR_KEY_19,
+    PCR_KEY_20,
+    PCR_KEY_21,
+    PCR_KEY_22,
+    PCR_KEY_23,
+    PCR_KEY_24,
+    PCR_KEY_25,
+    PCR_KEY_26,
+    PCR_KEY_27,
+    PCR_KEY_28,
+    PCR_KEY_29,
+    PCR_KEY_30,
+    PCR_KEY_31,
+    PCR_DIGEST_0,
+    PCR_DIGEST_1,
+    PCR_DIGEST_2,
+    PCR_DIGEST_3,
+    PCR_DIGEST_4,
+    PCR_DIGEST_5,
+    PCR_DIGEST_6,
+    PCR_DIGEST_7,
+    PCR_DIGEST_8,
+    PCR_DIGEST_9,
+    PCR_DIGEST_10,
+    PCR_DIGEST_11,
+    PCR_DIGEST_12,
+    PCR_DIGEST_13,
+    PCR_DIGEST_14,
+    PCR_DIGEST_15,
+    PCR_PCR_CTRL,
+    PCR_PCR_STATUS,
     PCR_PCR_RD_0,
     PCR_PCR_RD_1,
     PCR_PCR_RD_2,
@@ -82,28 +486,82 @@ package pcr_reg_pkg;
     PCR_PCR_RD_4,
     PCR_PCR_RD_5,
     PCR_PCR_RD_6,
-    PCR_PCR_RD_7
+    PCR_PCR_RD_7,
+    PCR_MSG_LENGTH_LOWER,
+    PCR_MSG_LENGTH_UPPER
   } pcr_id_e;
 
   // Register width information to check illegal writes
-  parameter logic [3:0] PCR_PERMIT [17] = '{
-    4'b 0001, // index[ 0] PCR_CTRL
-    4'b 1111, // index[ 1] PCR_PCR_WR_0
-    4'b 1111, // index[ 2] PCR_PCR_WR_1
-    4'b 1111, // index[ 3] PCR_PCR_WR_2
-    4'b 1111, // index[ 4] PCR_PCR_WR_3
-    4'b 1111, // index[ 5] PCR_PCR_WR_4
-    4'b 1111, // index[ 6] PCR_PCR_WR_5
-    4'b 1111, // index[ 7] PCR_PCR_WR_6
-    4'b 1111, // index[ 8] PCR_PCR_WR_7
-    4'b 1111, // index[ 9] PCR_PCR_RD_0
-    4'b 1111, // index[10] PCR_PCR_RD_1
-    4'b 1111, // index[11] PCR_PCR_RD_2
-    4'b 1111, // index[12] PCR_PCR_RD_3
-    4'b 1111, // index[13] PCR_PCR_RD_4
-    4'b 1111, // index[14] PCR_PCR_RD_5
-    4'b 1111, // index[15] PCR_PCR_RD_6
-    4'b 1111  // index[16] PCR_PCR_RD_7
+  parameter logic [3:0] PCR_PERMIT [69] = '{
+    4'b 0001, // index[ 0] PCR_INTR_STATE
+    4'b 0001, // index[ 1] PCR_INTR_ENABLE
+    4'b 0001, // index[ 2] PCR_INTR_TEST
+    4'b 0001, // index[ 3] PCR_ALERT_TEST
+    4'b 0011, // index[ 4] PCR_CFG
+    4'b 0001, // index[ 5] PCR_CMD
+    4'b 0011, // index[ 6] PCR_STATUS
+    4'b 1111, // index[ 7] PCR_ERR_CODE
+    4'b 1111, // index[ 8] PCR_WIPE_SECRET
+    4'b 1111, // index[ 9] PCR_KEY_0
+    4'b 1111, // index[10] PCR_KEY_1
+    4'b 1111, // index[11] PCR_KEY_2
+    4'b 1111, // index[12] PCR_KEY_3
+    4'b 1111, // index[13] PCR_KEY_4
+    4'b 1111, // index[14] PCR_KEY_5
+    4'b 1111, // index[15] PCR_KEY_6
+    4'b 1111, // index[16] PCR_KEY_7
+    4'b 1111, // index[17] PCR_KEY_8
+    4'b 1111, // index[18] PCR_KEY_9
+    4'b 1111, // index[19] PCR_KEY_10
+    4'b 1111, // index[20] PCR_KEY_11
+    4'b 1111, // index[21] PCR_KEY_12
+    4'b 1111, // index[22] PCR_KEY_13
+    4'b 1111, // index[23] PCR_KEY_14
+    4'b 1111, // index[24] PCR_KEY_15
+    4'b 1111, // index[25] PCR_KEY_16
+    4'b 1111, // index[26] PCR_KEY_17
+    4'b 1111, // index[27] PCR_KEY_18
+    4'b 1111, // index[28] PCR_KEY_19
+    4'b 1111, // index[29] PCR_KEY_20
+    4'b 1111, // index[30] PCR_KEY_21
+    4'b 1111, // index[31] PCR_KEY_22
+    4'b 1111, // index[32] PCR_KEY_23
+    4'b 1111, // index[33] PCR_KEY_24
+    4'b 1111, // index[34] PCR_KEY_25
+    4'b 1111, // index[35] PCR_KEY_26
+    4'b 1111, // index[36] PCR_KEY_27
+    4'b 1111, // index[37] PCR_KEY_28
+    4'b 1111, // index[38] PCR_KEY_29
+    4'b 1111, // index[39] PCR_KEY_30
+    4'b 1111, // index[40] PCR_KEY_31
+    4'b 1111, // index[41] PCR_DIGEST_0
+    4'b 1111, // index[42] PCR_DIGEST_1
+    4'b 1111, // index[43] PCR_DIGEST_2
+    4'b 1111, // index[44] PCR_DIGEST_3
+    4'b 1111, // index[45] PCR_DIGEST_4
+    4'b 1111, // index[46] PCR_DIGEST_5
+    4'b 1111, // index[47] PCR_DIGEST_6
+    4'b 1111, // index[48] PCR_DIGEST_7
+    4'b 1111, // index[49] PCR_DIGEST_8
+    4'b 1111, // index[50] PCR_DIGEST_9
+    4'b 1111, // index[51] PCR_DIGEST_10
+    4'b 1111, // index[52] PCR_DIGEST_11
+    4'b 1111, // index[53] PCR_DIGEST_12
+    4'b 1111, // index[54] PCR_DIGEST_13
+    4'b 1111, // index[55] PCR_DIGEST_14
+    4'b 1111, // index[56] PCR_DIGEST_15
+    4'b 0111, // index[57] PCR_PCR_CTRL
+    4'b 0001, // index[58] PCR_PCR_STATUS
+    4'b 1111, // index[59] PCR_PCR_RD_0
+    4'b 1111, // index[60] PCR_PCR_RD_1
+    4'b 1111, // index[61] PCR_PCR_RD_2
+    4'b 1111, // index[62] PCR_PCR_RD_3
+    4'b 1111, // index[63] PCR_PCR_RD_4
+    4'b 1111, // index[64] PCR_PCR_RD_5
+    4'b 1111, // index[65] PCR_PCR_RD_6
+    4'b 1111, // index[66] PCR_PCR_RD_7
+    4'b 1111, // index[67] PCR_MSG_LENGTH_LOWER
+    4'b 1111  // index[68] PCR_MSG_LENGTH_UPPER
   };
 
 endpackage
