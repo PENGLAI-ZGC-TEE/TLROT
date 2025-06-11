@@ -44,7 +44,7 @@ package tl_main_rot_pkg;
   localparam logic [31:0] ADDR_MASK_PUF1           = 32'h 0000003f;
   localparam logic [31:0] ADDR_MASK_PUF2           = 32'h 0000003f;
   localparam logic [31:0] ADDR_MASK_PUF_REG        = 32'h 0000003f;
-  localparam logic [31:0] ADDR_MASK_PCR            = 32'h 00001fff;
+  localparam logic [31:0] ADDR_MASK_PCR            = 32'h 0000007f;
 
   localparam int N_HOST   = 1;
   localparam int N_DEVICE = 18;
